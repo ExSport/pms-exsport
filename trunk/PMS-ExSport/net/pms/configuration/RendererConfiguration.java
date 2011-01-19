@@ -82,12 +82,18 @@ public class RendererConfiguration {
 	}
 
 	public RootFolder getRootFolder() {
+		return getRootFolder(true);
+	}
+
+	public RootFolder getRootFolder(boolean initialize) {
 		if (rootFolder == null) {
 			rootFolder = new RootFolder();
-			try {
-				PMS.get().manageRoot(this);
-			} catch (IOException e) {
-				e.printStackTrace();
+			if (initialize) {
+				try {
+					PMS.get().manageRoot(this);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 		return rootFolder;
@@ -142,7 +148,7 @@ public class RendererConfiguration {
 			time = (int) (time / c);
 		if (time > 0) {
 			speedInMbits = (int) (1024 / time);
-			PMS.minimal("Renderer " + this + " have an estimated network speed of: " + speedInMbits + " Mb/s");
+			PMS.minimal("Renderer " + this + " has an estimated network speed of: " + speedInMbits + " Mb/s");
 		}
 	}
 	

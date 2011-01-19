@@ -82,6 +82,7 @@ public class PmsConfiguration {
 	private static final String KEY_FFMPEG_ALTERNATIVE_PATH = "alternativeffmpegpath";
 	private static final String KEY_SKIP_LOOP_FILTER_ENABLED = "skiploopfilter";
 	private static final String KEY_MENCODER_MAIN_SETTINGS = "mencoder_encode";
+	private static final String KEY_MENCODER_VOBSUB_SUBTITLE_QUALITY = "mencoder_vobsub_subtitle_quality";
 	private static final String KEY_LOGGING_LEVEL = "level";
 	private static final String KEY_ENGINES = "engines";
 	private static final String KEY_CODEC_SPEC_SCRIPT = "codec_spec_script";
@@ -750,6 +751,14 @@ public class PmsConfiguration {
 		configuration.setProperty(KEY_MENCODER_MAIN_SETTINGS, value);
 	}
 
+	public String getMencoderVobsubSubtitleQuality() {
+		return getString(KEY_MENCODER_VOBSUB_SUBTITLE_QUALITY, "3");
+	}
+
+	public void setMencoderVobsubSubtitleQuality(String value) {
+		configuration.setProperty(KEY_MENCODER_VOBSUB_SUBTITLE_QUALITY, value);
+	}
+
 	public int getLoggingLevel() {
 		return getInt(KEY_LOGGING_LEVEL, 2);
 	}
@@ -783,7 +792,7 @@ public class PmsConfiguration {
 		for (String engineId : input) {
 			if (engineId.startsWith("avs")  && !registry.isAvis() && PMS.get().isWindows()) {
 				if (!avsHackLogged) {
-					PMS.minimal("AviSynth in not installed ! You cannot use " + engineId + " as transcoding engine !"); //$NON-NLS-1$ //$NON-NLS-2$
+					PMS.minimal("AviSynth is not installed. You cannot use " + engineId + " as a transcoding engine."); //$NON-NLS-1$ //$NON-NLS-2$
 					avsHackLogged = true;
 				}
 				toBeRemoved.add(engineId);
@@ -798,25 +807,29 @@ public class PmsConfiguration {
 	private static final String PMSDIR = "\\PMS\\";
 
 	public void save() throws ConfigurationException {
+		String strAppData = System.getenv("APPDATA");
+
 		if(Platform.isMac()) {
 			configuration.setFileName(CONFIGURATION_PATH_MAC + CONFIGURATION_FILENAME);
+		// Else if it is Windows with AppData
+		} else if (Platform.isWindows() && strAppData != null) {
+			// If config file already exists in AppData
+			if (new File(strAppData + PMSDIR + CONFIGURATION_FILENAME).exists()) {
+				configuration.setFileName(strAppData+PMSDIR+CONFIGURATION_FILENAME);
+			// Else create the file and directory if needed
+			} else {
+				File pmsDir = new File(strAppData+PMSDIR);
+				if (!pmsDir.exists())
+					pmsDir.mkdir();
+				configuration.setFileName(strAppData+PMSDIR+CONFIGURATION_FILENAME);
+			}
 		} else {
 			configuration.setFileName(CONFIGURATION_FILENAME);
 		}
 		try {
 			configuration.save();
 		} catch (ConfigurationException ce) {
-			PMS.minimal("Troubles to save PMS.conf in application folder... not admin access ?");
-			String strAppData = System.getenv("APPDATA");
-			if (Platform.isWindows() && strAppData != null) {
-				PMS.minimal("Switching save folder to: " + strAppData + PMSDIR);
-				File pmsDir = new File(strAppData+PMSDIR);
-				if (!pmsDir.exists())
-					pmsDir.mkdir();
-				configuration.setFileName(strAppData+PMSDIR+CONFIGURATION_FILENAME);
-				configuration.save();
-			} else
-				throw ce;
+			throw ce;
 		}
 		PMS.minimal("Configuration saved.");
 	}
@@ -1119,7 +1132,7 @@ public class PmsConfiguration {
 	public void setAudioResample(boolean value) {
 		configuration.setProperty(KEY_AUDIO_RESAMPLE, value);
 	}
-	
+
 	public String getVirtualFolders() {
 		return getString(KEY_VIRTUAL_FOLDERS, "");
 	}

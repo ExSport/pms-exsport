@@ -38,11 +38,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.logging.LogManager;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.lang.StringUtils;
 
 import com.sun.jna.Platform;
 
@@ -123,25 +125,50 @@ import static org.hamcrest.Matchers.notNullValue;
 
 public class PMS {
 	
+	/**
+	 * Update URL used in the {@link AutoUpdater}.
+	 */
 	private static final String UPDATE_SERVER_URL = "http://ps3mediaserver.googlecode.com/svn/trunk/ps3mediaserver/update.data"; //$NON-NLS-1$
-	public static final String VERSION = "1.20.412"; //$NON-NLS-1$
+	/**
+	 * Version showed in the UPNP XML descriptor and logs.
+	 */
+	public static final String VERSION = "1.20.442_ExSport"; //$NON-NLS-1$
 	public static final String AVS_SEPARATOR = "\1"; //$NON-NLS-1$
 
 	// TODO(tcox):  This shouldn't be static
 	private static PmsConfiguration configuration;
 
+	/**Returns a pointer to the main PMS GUI.
+	 * @return {@link IFrame} Main PMS window.
+	 */
 	public IFrame getFrame() {
 		return frame;
 	}
 
+	/**getRootFolder returns the Root Folder for a given renderer. There could be the case
+	 * where a given media renderer needs a different root structure.
+	 * @param renderer {@link RendererConfiguration} is the renderer for which to get the RootFolder structure. If <b>null</b>, then
+	 * the default renderer is used.
+	 * @return {@link RootFolder} The root folder structure for a given renderer
+	 */
 	public RootFolder getRootFolder(RendererConfiguration renderer) {
+	    return getRootFolder(renderer, true);
+	}
+
+	private RootFolder getRootFolder(RendererConfiguration renderer, boolean initialize) {
 		// something to do here for multiple directories views for each renderer
 		if (renderer == null)
 			renderer = RendererConfiguration.getDefaultConf();
-		return renderer.getRootFolder();
+		return renderer.getRootFolder(initialize);
 	}
 
+	/**
+	 * Pointer to a running PMS server.
+	 */
 	private static PMS instance = null;
+	/**
+	 * Semaphore used in order to not create two PMS at the same time.
+	 */
 	private static byte[] lock = null;
 	static {
 		lock = new byte[0];
@@ -149,8 +176,15 @@ public class PMS {
 		sdfDate = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US); //$NON-NLS-1$
 	}
 	
+	/**
+	 * Array of {@link RendererConfiguration} that have been found by PMS.
+	 */
 	private ArrayList<RendererConfiguration> foundRenderers = new ArrayList<RendererConfiguration>();
 	
+	/**Adds a {@link RendererConfiguration} to the list of media renderers found. The list is being used, for
+	 * example, to give the user a graphical representation of the found media renderers.
+	 * @param mediarenderer {@link RendererConfiguration}
+	 */
 	public void setRendererfound(RendererConfiguration mediarenderer) {
 		if (!foundRenderers.contains(mediarenderer)) {
 			foundRenderers.add(mediarenderer);
@@ -166,12 +200,23 @@ public class PMS {
 		
 	}
 	
-	//private RootFolder rootFolder;
+	/**
+	 * HTTP server that serves the XML files needed by UPNP server and the media files.
+	 */
 	private HTTPServer server;
+	/**
+	 * User friendly name for the server.
+	 */
 	private String serverName;
 	private ArrayList<Format> extensions;
+	/**
+	 * List of registered {@link Player}.
+	 */
 	private ArrayList<Player> players;
 	private ArrayList<Player> allPlayers;
+	/**
+	 * @return ArrayList of {@link Player}.
+	 */
 	public ArrayList<Player> getAllPlayers() {
 		return allPlayers;
 	}
@@ -185,31 +230,64 @@ public class PMS {
 	public static SimpleDateFormat sdfDate;
 	public static SimpleDateFormat sdfHour;
 	
+	/** Information level DEBUG. Lowest level.
+	 * @see #message(int, String)
+	 */
 	public static final int DEBUG = 0;
+	/** Information level INFO.
+	 * @see #message(int, String)
+	 */
 	public static final int INFO = 1;
+	/** Information level MINIMAL. Highest level. Messages with this level are always printed to the command line window.
+	 * @see #message(int, String)
+	 */
 	public static final int MINIMAL = 2;
 	
 	private PrintWriter pw;
 	
+	/**
+	 * ArrayList of active processes.
+	 */
 	public ArrayList<Process> currentProcesses = new ArrayList<Process>();
 	
 	private PMS() {
 	}
 	
+	/**
+	 * {@link IFrame} object that represents PMS GUI.
+	 */
 	IFrame frame;
 	
+	/**
+	 * @see Platform#isWindows()
+	 */
 	public boolean isWindows() {
 		return Platform.isWindows();
 	}
 
 	private int proxy;
 	
+	/**Interface to Windows specific functions, like Windows Registry. registry is set by {@link #init()}.
+	 * @see WinUtils
+	 */
 	private WinUtils registry;
 	
+	/**
+	 * @see WinUtils
+	 */
 	public WinUtils getRegistry() {
 		return registry;
 	}
 
+	/**Executes a new Process and creates a fork that waits for its results. 
+	 * TODO:Extend explanation on where this is being used.
+	 * @param name Symbolic name for the process to be launched, only used in the trace log
+	 * @param error (boolean) Set to true if you want PMS to add error messages to the trace pane
+	 * @param workDir (File) optional working directory to run the process in
+	 * @param params (array of Strings) array containing the command to call and its arguments
+	 * @return Returns true if the command exited as expected
+	 * @throws Exception TODO: Check which exceptions to use
+	 */
 	private boolean checkProcessExistence(String name, boolean error, File workDir, String...params) throws Exception {
 		PMS.info("launching: " + params[0]); //$NON-NLS-1$
 		
@@ -257,11 +335,22 @@ public class PMS {
 		}
 	}
 	
+	/**
+	 * @see System#err
+	 */
 	@SuppressWarnings("unused")
 	private PrintStream stderr = System.err;  
 	
+	/**Main resource database that supports search capabilities. Also known as media cache.
+	 * @see DLNAMediaDatabase
+	 */
 	private DLNAMediaDatabase database;
 	
+	/**Used to get the database. Needed in the case of the Xbox 360, that requires a database.
+	 * for its queries.
+	 * @return (DLNAMediaDatabase) If there exists a database register with the program, a pointer to it is returned.
+	 * If there is no database in memory, a new one is created. If the option to use a "cache" is deactivated, returns <b>null</b>.
+	 */
 	public synchronized DLNAMediaDatabase getDatabase() {
 		if (PMS.configuration.getUseCache()) {
 			if (database == null) {
@@ -281,6 +370,11 @@ public class PMS {
 	}
 	
 	
+	/**Initialisation procedure for PMS.
+	 * @return true if the server has been init correctly. false if the server could
+	 * not be set to listen to the UPNP port.
+	 * @throws Exception
+	 */
 	private boolean init () throws Exception {
 		
 		
@@ -291,7 +385,7 @@ public class PMS {
 			debug = new File("debug.log"); //$NON-NLS-1$
 			pw = new PrintWriter(new FileWriter(debug)); //$NON-NLS-1$
 		} catch (Throwable e) {
-			PMS.minimal("Error in accessing debug.log..."); //$NON-NLS-1$
+			PMS.minimal("Error accessing debug.log..."); //$NON-NLS-1$
 			pw = null;
 		} finally {
 			if (pw == null) {
@@ -306,7 +400,7 @@ public class PMS {
 			frame = new LooksFrame(autoUpdater, configuration);
 			autoUpdater.pollServer();
 		} else {
-			System.out.println("GUI environment no available"); //$NON-NLS-1$
+			System.out.println("GUI environment not available"); //$NON-NLS-1$
 			System.out.println("Switching to console mode"); //$NON-NLS-1$
 			frame = new DummyFrame();
 		}
@@ -318,7 +412,7 @@ public class PMS {
 		
 		
 		minimal("Starting Java PS3 Media Server v" + PMS.VERSION); //$NON-NLS-1$
-		minimal("by shagrath / 2008-2010"); //$NON-NLS-1$
+		minimal("by shagrath / 2008-2011"); //$NON-NLS-1$
 		minimal("http://ps3mediaserver.blogspot.com"); //$NON-NLS-1$
 		minimal("http://code.google.com/p/ps3mediaserver"); //$NON-NLS-1$
 		minimal(""); //$NON-NLS-1$
@@ -331,7 +425,7 @@ public class PMS {
 		
 		//System.out.println(System.getProperties().toString().replace(',', '\n'));
 				
-		PMS.minimal("Checking font cache... launching simple instance of MPlayer... You may have to wait 60 seconds !");
+		PMS.minimal("Checking font cache... launching simple instance of MPlayer... You may have to wait 60 seconds!");
 		checkProcessExistence("MPlayer", true, null, configuration.getMplayerPath(), "dummy");
 		checkProcessExistence("MPlayer", true, PMS.getConfiguration().getTempFolder(), configuration.getMplayerPath(), "dummy");
 		PMS.minimal("Done!");
@@ -389,15 +483,15 @@ public class PMS {
 		registerExtensions();
 		registerPlayers();
 		
-		manageRoot(RendererConfiguration.getDefaultConf());
+		getRootFolder(RendererConfiguration.getDefaultConf());
 		
 		boolean binding = false;
 		try {
 			binding = server.start();
 		} catch (BindException b) {
 			
-			PMS.minimal("FATAL ERROR : Unable to bind on port: " + configuration.getServerPort() + " cause: " + b.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
-			PMS.minimal("Maybe another process is running or hostname is wrong..."); //$NON-NLS-1$
+			PMS.minimal("FATAL ERROR: Unable to bind on port: " + configuration.getServerPort() + " cause: " + b.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
+			PMS.minimal("Maybe another process is running or the hostname is wrong..."); //$NON-NLS-1$
 			
 		}
 		new Thread() {
@@ -414,7 +508,7 @@ public class PMS {
 					if (foundRenderers.size() == 0)
 						frame.setStatusCode(0, Messages.getString("PMS.0"), "messagebox_critical-256.png"); //$NON-NLS-1$ //$NON-NLS-2$
 					else {
-						frame.setStatusCode(0, "Another media renderer other than PS3 has been detected... This software is tuned for PS3 but may work with your renderer", "messagebox_warning-256.png");
+						frame.setStatusCode(0, "Another media renderer than the PS3 has been detected... This software is tuned for the PS3 but may work with your renderer", "messagebox_warning-256.png");
 					}
 					
 				}
@@ -429,13 +523,13 @@ public class PMS {
 		}
 		
 		if (getDatabase() != null) {
-			minimal("A tiny media library admin interface is available at : http://" + server.getHost() + ":" + server.getPort() + "/console/home");
+			minimal("A tiny media library admin interface is available at: http://" + server.getHost() + ":" + server.getPort() + "/console/home");
 		}
 		
 		try {
 			ExternalFactory.lookup();
 		} catch (Exception e) {
-			PMS.error("Error in the plugins lookup", e);
+			PMS.error("Error loading plugins", e);
 		}
 		
 		frame.serverReady();
@@ -474,19 +568,51 @@ public class PMS {
 		
 		return true;
 	}
+
+	private static final String PMSDIR = "\\PMS\\";
+
 	
+	/**Creates a new Root folder for a given configuration. It adds following folders in this order:
+	 * <ol><li>Directory folders as stated in the configuration pane
+	 * <li>Web nodes
+	 * <li>iPhoto
+	 * <li>iTunes
+	 * <li>Media Library
+	 * <li>Folders created by plugins
+	 * <li>Video settings
+	 * </ol>
+	 * @param renderer {@link RendererConfiguration} to be managed.
+	 * @throws IOException
+	 */
+
 	public void manageRoot(RendererConfiguration renderer) throws IOException {
+		String webConfPath;
+
 		File files [] = loadFoldersConf(configuration.getFolders());
 		if (files == null || files.length == 0)
 			files = File.listRoots();
-		if (PMS.get().isWindows()) {
-			
+		/*
+		 * initialize == false: make sure renderer.getRootFolder() doesn't call back into this method
+		 * if it creates a new root folder
+		 *
+		 * this avoids a redundant call to this method, and prevents loadFoldersConf()
+		 * being called twice for each renderer
+		 */
+		RootFolder rootFolder = getRootFolder(renderer, false);
+
+		rootFolder.browse(files);
+		rootFolder.browse(MapFileConfiguration.parse(configuration.getVirtualFolders()));
+
+		String strAppData = System.getenv("APPDATA");
+
+		if (Platform.isWindows() && strAppData != null) {
+			webConfPath = strAppData + PMSDIR + "WEB.conf";
+		} else {
+			webConfPath = "WEB.conf";
 		}
-		getRootFolder(renderer).browse(files);
-		getRootFolder(renderer).browse(MapFileConfiguration.parse(configuration.getVirtualFolders()));
-		
-		
-		File webConf = new File("WEB.conf"); //$NON-NLS-1$
+
+		File webConf = new File(webConfPath); //$NON-NLS-1$
+
 		if (webConf.exists()) {
 			try {
 				LineNumberReader br = new LineNumberReader(new InputStreamReader(new FileInputStream(webConf), "UTF-8")); //$NON-NLS-1$
@@ -498,43 +624,46 @@ public class PMS {
 						String value = line.substring(line.indexOf("=")+1); //$NON-NLS-1$
 						String keys [] = parseFeedKey((String) key);
 						try {
-							if (keys[0].equals("imagefeed") || keys[0].equals("audiofeed") || keys[0].equals("videofeed") || keys[0].equals("audiostream") || keys[0].equals("videostream")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
-							
-							String values [] = parseFeedValue((String) value);
-							DLNAResource parent = null;
-							if (keys[1] != null) {
-								StringTokenizer st = new StringTokenizer(keys[1], ","); //$NON-NLS-1$
-								DLNAResource currentRoot = getRootFolder(renderer);
-								while (st.hasMoreTokens()) {
-									String folder = st.nextToken();
-									parent = currentRoot.searchByName(folder);
-									if (parent == null) {
-										parent = new VirtualFolder(folder, ""); //$NON-NLS-1$
-										currentRoot.addChild(parent);
+							if (
+								keys[0].equals("imagefeed") ||
+								keys[0].equals("audiofeed") ||
+								keys[0].equals("videofeed") ||
+								keys[0].equals("audiostream") ||
+								keys[0].equals("videostream")
+							) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+								String values [] = parseFeedValue((String) value);
+								DLNAResource parent = null;
+								if (keys[1] != null) {
+									StringTokenizer st = new StringTokenizer(keys[1], ","); //$NON-NLS-1$
+									DLNAResource currentRoot = rootFolder;
+									while (st.hasMoreTokens()) {
+										String folder = st.nextToken();
+										parent = currentRoot.searchByName(folder);
+										if (parent == null) {
+											parent = new VirtualFolder(folder, ""); //$NON-NLS-1$
+											currentRoot.addChild(parent);
+										}
+										currentRoot = parent;
 									}
-									currentRoot = parent;
+								}
+								if (parent == null)
+									parent = rootFolder;
+								if (keys[0].equals("imagefeed")) { //$NON-NLS-1$
+									parent.addChild(new ImagesFeed(values[0]));
+								} else if (keys[0].equals("videofeed")) { //$NON-NLS-1$
+									parent.addChild(new VideosFeed(values[0]));
+								} else if (keys[0].equals("audiofeed")) { //$NON-NLS-1$
+									parent.addChild(new AudiosFeed(values[0]));
+								} else if (keys[0].equals("audiostream")) { //$NON-NLS-1$
+									parent.addChild(new WebAudioStream(values[0], values[1], values[2]));
+								} else if (keys[0].equals("videostream")) { //$NON-NLS-1$
+									parent.addChild(new WebVideoStream(values[0], values[1], values[2]));
 								}
 							}
-							if (parent == null)
-								parent = getRootFolder(renderer);
-							if (keys[0].equals("imagefeed")) { //$NON-NLS-1$
-								parent.addChild(new ImagesFeed(values[0]));
-							} else if (keys[0].equals("videofeed")) { //$NON-NLS-1$
-								parent.addChild(new VideosFeed(values[0]));
-							} else if (keys[0].equals("audiofeed")) { //$NON-NLS-1$
-								parent.addChild(new AudiosFeed(values[0]));
-							} else if (keys[0].equals("audiostream")) { //$NON-NLS-1$
-								parent.addChild(new WebAudioStream(values[0], values[1], values[2]));
-							} else if (keys[0].equals("videostream")) { //$NON-NLS-1$
-								parent.addChild(new WebVideoStream(values[0], values[1], values[2]));
-							}
-						}
-						
 						// catch exception here and go with parsing
-	                  } catch (ArrayIndexOutOfBoundsException e) {
-	                     PMS.minimal("Error in line " + br.getLineNumber() + " of file WEB.conf: " + e.getMessage()); //$NON-NLS-1$
-	                     
-	                  }
+						} catch (ArrayIndexOutOfBoundsException e) {
+							PMS.minimal("Error at line " + br.getLineNumber() + " of file WEB.conf: " + e.getMessage()); //$NON-NLS-1$
+						}
 					}
 				}
 				br.close();
@@ -543,7 +672,6 @@ public class PMS {
 				PMS.minimal("Unexpected error in WEB.conf: " + e.getMessage()); //$NON-NLS-1$
 			}
 		}
-
 
 		if (Platform.isMac()) {
  			if (PMS.getConfiguration().getIphotoEnabled()) {
@@ -563,10 +691,15 @@ public class PMS {
 	
 		addVideoSettingssFolder(renderer);
 		
-		getRootFolder(renderer).closeChildren(0, false);
+		rootFolder.closeChildren(0, false);
 	}
 
 
+	/**Adds iPhoto folder. Used by manageRoot, so it is usually used as a folder at the
+	 * root folder. Only works when PMS is run on MacOsX.
+	 * TODO: Requirements for iPhoto.
+	 * @param renderer
+	 */
 	@SuppressWarnings("unchecked")
 	public void addiPhotoFolder(RendererConfiguration renderer) {
 		if (Platform.isMac()) {
@@ -612,10 +745,18 @@ public class PMS {
  				}
 			} catch (Exception e) {
 				PMS.error("Something wrong with the iPhoto Library scan: ",e); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-               }
+			}
 		}
 	}
 	
+	/**Returns the iTunes XML file. This file has all the information of the iTunes
+	 * database. The methods used in this function depends on whether PMS runs on 
+	 * MacOsX or Windows.
+	 * @param isOsx deprecated and not used
+	 * @return (String) Absolute path to the iTunes XML file.
+	 * @throws Exception
+	 * @see {@link PMS#addiTunesFolder(RendererConfiguration)}
+	 */
 	@SuppressWarnings("deprecation")
 	private String getiTunesFile(boolean isOsx) throws Exception {
 		String line = null;
@@ -656,6 +797,15 @@ public class PMS {
 		return iTunesFile;
 	}
 	
+	/**Adds iTunes folder. Used by manageRoot, so it is usually used as a folder at the
+	 * root folder. Only works when PMS is run on MacOsX or Windows.<p>
+	 * The iTunes XML is parsed fully when this method is called, so it can take some time for
+	 * larger (+1000 albums) databases. TODO: Check if only music is being added.<P>
+	 * This method does not support genius playlists and does not provide a media library.
+	 * @param renderer {@link RendererConfiguration} Which media renderer to add this folder to.
+	 * @see PMS#manageRoot(RendererConfiguration)
+	 * @see PMS#getiTunesFile(boolean)
+	 */
 	@SuppressWarnings("unchecked")
 	public void addiTunesFolder(RendererConfiguration renderer) {
 		if (Platform.isMac() || Platform.isWindows()) {
@@ -698,7 +848,12 @@ public class PMS {
 			}
 		}
 	}
-	
+	/**Adds Video Settings folder. Used by manageRoot, so it is usually used as a folder at the
+	 * root folder. Child objects are created when this folder is created.
+	 * @param renderer {@link RendererConfiguration} Which media renderer to add this folder to.
+	 * @see PMS#manageRoot(RendererConfiguration)
+	 */
+
 	public void addVideoSettingssFolder(RendererConfiguration renderer) {
 		if (!PMS.configuration.getHideVideoSettings()) {
 			VirtualFolder vf = new VirtualFolder(Messages.getString("PMS.37"), null); //$NON-NLS-1$
@@ -793,14 +948,19 @@ public class PMS {
 		}
 	}
 	
+	/**Adds as many folders as plugins providing root folders are loaded into memory (need to implement AdditionalFolderAtRoot)
+	 * @param renderer {@link RendererConfiguration} Which media renderer to add this folder to.
+	 * @see PMS#manageRoot(RendererConfiguration)
+	 */
 	private void addAdditionalFoldersAtRoot(RendererConfiguration renderer) {
+		RootFolder rootFolder = getRootFolder(renderer);
 		for(ExternalListener listener:ExternalFactory.getExternalListeners()) {
 			if (listener instanceof AdditionalFolderAtRoot)
-				getRootFolder(renderer).addChild(((AdditionalFolderAtRoot) listener).getChild());
+				rootFolder.addChild(((AdditionalFolderAtRoot) listener).getChild());
 			else if (listener instanceof AdditionalFoldersAtRoot) {
 				java.util.Iterator<DLNAResource> folders =((AdditionalFoldersAtRoot)listener).getChildren();
 				while ( folders.hasNext()) {
-					getRootFolder(renderer).addChild(folders.next());
+					rootFolder.addChild(folders.next());
 				}
 			}
 		}
@@ -809,10 +969,19 @@ public class PMS {
 	//private boolean mediaLibraryAdded = false;
 	private MediaLibrary library;
 	
+	/**Returns the MediaLibrary used by PMS.
+	 * @return (MediaLibrary) Used library, if any. null if none is in use.
+	 */
 	public MediaLibrary getLibrary() {
 		return library;
 	}
 
+	/**Creates a new MediaLibrary object and adds the Media Library folder at root. This method
+	 * can only be run once, or the previous MediaLibrary object can be lost.<P>
+	 * @param renderer {@link RendererConfiguration} Which media renderer to add this folder to.
+	 * @return true if the settings allow to have a MediaLibrary.
+	 * @see PMS#manageRoot(RendererConfiguration)
+	 */
 	public boolean addMediaLibraryFolder(RendererConfiguration renderer) {
 		if (PMS.configuration.getUseCache() && !renderer.isMediaLibraryAdded()) {
 			library = new MediaLibrary();
@@ -824,6 +993,11 @@ public class PMS {
 		return false;
 	}
 	
+	/**Executes the needed commands in order to make PMS a Windows service that starts whenever the machine is started.
+	 * This function is called from the Network tab.
+	 * @return true if PMS could be installed as a Windows service.
+	 * @see NetworkTab#build()
+	 */
 	public boolean installWin32Service() {
 		PMS.minimal(Messages.getString("PMS.41")); //$NON-NLS-1$
 		String cmdArray [] = new String[] { "win32/service/wrapper.exe", "-r", "wrapper.conf" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -837,26 +1011,45 @@ public class PMS {
 		return pwinstall.isSuccess();
 	}
 	
-	private String [] parseFeedKey(String entry) {
-		StringTokenizer st = new StringTokenizer(entry, "."); //$NON-NLS-1$
-		String results [] = new String [2];
-		int i = 0;
-		while (st.hasMoreTokens()) {
-			results[i++] = st.nextToken();
+	/**Splits the first part of a WEB.conf spec into a pair of Strings representing the resource type and its DLNA folder.<P>
+	 * Used by {@link PMS#manageRoot(RendererConfiguration)} in the WEB.conf section.
+	 * @param spec (String) to be split
+	 * @return Array of (String) that represents the tokenized entry.
+	 * @see PMS#manageRoot(RendererConfiguration)
+	 */
+	private String [] parseFeedKey(String spec) {
+		String[] pair = StringUtils.split(spec, ".", 2);
+
+		if (pair == null || pair.length < 2) {
+		    pair = new String [2];
 		}
-		return results;
+
+		if (pair[0] == null) {
+		    pair[0] = "";
+		}
+
+		return pair;
 	}
 	
-	private String [] parseFeedValue(String entry) {
-		StringTokenizer st = new StringTokenizer(entry, ","); //$NON-NLS-1$
-		String results [] = new String [3];
+	/**Splits the second part of a WEB.conf spec into a triple of Strings representing the DLNA path, resource URI and optional thumbnail URI.<P>
+	 * Used by {@link PMS#manageRoot(RendererConfiguration)} in the WEB.conf section.
+	 * @param spec (String) to be split
+	 * @return Array of (String) that represents the tokenized entry.
+	 * @see PMS#manageRoot(RendererConfiguration)
+	 */
+	private String [] parseFeedValue(String spec) {
+		StringTokenizer st = new StringTokenizer(spec, ","); //$NON-NLS-1$
+		String triple [] = new String [3];
 		int i = 0;
 		while (st.hasMoreTokens()) {
-			results[i++] = st.nextToken();
+			triple[i++] = st.nextToken();
 		}
-		return results;
+		return triple;
 	}
 	
+	/**Add a known set of extensions to the extensions list.
+	 * @see PMS#init()
+	 */
 	private void registerExtensions() {
 		extensions.add(new WEB());
 		extensions.add(new MKV());
@@ -874,6 +1067,9 @@ public class PMS {
 		extensions.add(new RAW());
 	}
 	
+	/**Register a known set of audio/video transform tools (known as {@link Player}s). Used in PMS#init().
+	 * @see PMS#init()
+	 */
 	private void registerPlayers() {
 		assertThat(configuration, notNullValue());
 		if (Platform.isWindows())
@@ -896,6 +1092,11 @@ public class PMS {
 		frame.addEngines();
 	}
 	
+	/**Adds a single {@link Player} to the list of Players. Used by {@link PMS#registerPlayers()}.
+	 * @param p (Player) to be added to the list
+	 * @see Player
+	 * @see PMS#registerPlayers()
+	 */
 	private void registerPlayer(Player p) {
 		allPlayers.add(p);
 		boolean ok = false;
@@ -934,32 +1135,44 @@ public class PMS {
 		}
 	}
 	
+	/**Transforms a comma separated list of directory entries into an array of {@link String}.
+	 * The function checks that the directory is exists and is a valid directory. It does not check
+	 * if you can access to the files inside the given directory.
+	 * @param folders {@link String} Comma separated list of directories.
+	 * @return {@link File}[] Array of directories.
+	 * @throws IOException
+	 * @see {@link PMS#manageRoot(RendererConfiguration)}
+	 */
 	public File [] loadFoldersConf(String folders) throws IOException {
 		if (folders == null || folders.length() == 0)
 			return null;
 		ArrayList<File> directories = new ArrayList<File>();
-		StringTokenizer st = new StringTokenizer(folders, ","); //$NON-NLS-1$
-		while (st.hasMoreTokens()) {
-			String line = st.nextToken();
-			File file = new File(line);
+		Pattern splitter = Pattern.compile("(?<!\\\\),"); //$NON-NLS-1$ // split the string along unescaped commas
+		String[] foldersArray = splitter.split(folders);
+		for (String folder: foldersArray) {
+			folder = folder.replaceAll("\\\\,", ",");
+			PMS.minimal("Checking shared folder: " + folder); //$NON-NLS-1$
+			File file = new File(folder);
 			if (file.exists()) {
 				if (file.isDirectory()) {
 					directories.add(file);
 				} else
-					PMS.error("File " + line + " is not a directory!", null); //$NON-NLS-1$ //$NON-NLS-2$
+					PMS.error("File " + folder + " is not a directory!", null); //$NON-NLS-1$ //$NON-NLS-2$
 			} else {
-				PMS.error("File " + line + " does not exists!", null); //$NON-NLS-1$ //$NON-NLS-2$
+				PMS.error("Directory " + folder + " does not exist!", null); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 		File f [] = new File[directories.size()];
-		for(int j=0;j<f.length;j++)
-			f[j] = directories.get(j);
+		directories.toArray(f);
 		return f;
 	}
-
 	
+	/**Restarts the servers. The trigger is either a button on the main PMS window or via
+	 * an action item added via {@link PMS#addVideoSettingssFolder(RendererConfiguration).
+	 * @throws IOException
+	 */
 	public void reset() throws IOException {
-		debug("Waiting 1 seconds..."); //$NON-NLS-1$
+		debug("Waiting 1 second..."); //$NON-NLS-1$
 		UPNPHelper.sendByeBye();
 		server.stop();
 		server = null;
@@ -976,28 +1189,53 @@ public class PMS {
 		UPNPHelper.sendAlive();
 	}
 	
+	/**Adds a message to the debug stream, or {@link System#out} in case the
+	 * debug stream has not been set up yet.
+	 * @param msg {@link String} to be added to the debug stream.
+	 */
 	public static void debug(String msg) {
 		if (instance != null)
 			instance.message(DEBUG, msg);
 		else
 			System.out.println(msg);
 	}
-	
+	/**Adds a message to the info stream.
+	 * @param msg {@link String} to be added to the info stream.
+	 */
 	public static void info(String msg) {
 		if (instance != null)
 			instance.message(INFO, msg);
 	}
 	
+	/**Adds a message to the minimal stream. This stream is also
+	 * shown in the Trace tab.
+	 * @param msg {@link String} to be added to the minimal stream.
+	 */
 	public static void minimal(String msg) {
 		if (instance != null)
 			instance.message(MINIMAL, msg);
 	}
 	
+	/**Adds a message to the error stream. This is usually called by
+	 * statements that are in a try/catch block.
+	 * @param msg {@link String} to be added to the error stream
+	 * @param t {@link Throwable} comes from an {@link Exception} 
+	 */
 	public static void error(String msg, Throwable t) {
 		if (instance != null)
 			instance.message(msg, t);
 	}
 	
+	/**Print a message in a given channel. The channels can be following:
+	 * <ul><li>{@link #MINIMAL} for informative messages that the user needs to be aware of. They are always
+	 * submitted to {@link System#out}, so they are shown to the command line window if one exists.
+	 * <li>{@link #INFO} for informative messages.
+	 * <li>{@link #DEBUG} for debug messages
+	 * </ul>
+	 * The debug level setting will state which ones of the three levels are being shown.
+	 * @param l {@link int} is the output text channel to use.
+	 * @param message {@link String} is the message to output
+	 */
 	private void message(int l, String message) {
 		
 			String name = Thread.currentThread().getName();
@@ -1026,6 +1264,10 @@ public class PMS {
 		
 	}
 	
+	/**Handles the display of an error message. It is always logged and is shown in the command line window if available.
+	 * @param error {@link String} to be displayed
+	 * @param t {@link Throwable} from the {@link Exception} that has the error description.
+	 */
 	private void message(String error, Throwable t) {
 		
 			String name = Thread.currentThread().getName();
@@ -1054,8 +1296,15 @@ public class PMS {
 		
 	}
 
+	/**Universally Unique Identifier used in the UPNP server.
+	 * 
+	 */
 	private String uuid;
 	
+	/**Creates a new {@link #uuid} for the UPNP server to use. Tries to follow the RFCs for creating the UUID based on the link MAC address.
+	 * Defaults to a random one if that method is not available.
+	 * @return {@link String} with an Universally Unique Identifier.
+	 */
 	public String usn() {
 		if (uuid == null) {
 			boolean uuidBasedOnMAC = false;
@@ -1088,12 +1337,15 @@ public class PMS {
 					uuid = UUID.randomUUID().toString();
 				}
 			}
-			PMS.minimal("Using following UUID: " + uuid); //$NON-NLS-1$
+			PMS.minimal("Using the following UUID: " + uuid); //$NON-NLS-1$
 		}
 		return "uuid:" + uuid ; //$NON-NLS-1$ //$NON-NLS-2$
 		//return "uuid:1234567890TOTO::";
 	}
 	
+	/**Returns the user friendly name of the UPNP server. 
+	 * @return {@link String} with the user friendly name.
+	 */
 	public String getServerName() {
 		if (serverName == null) {
 			StringBuffer sb = new StringBuffer();
@@ -1109,6 +1361,9 @@ public class PMS {
 	}
 	
 	
+	/**Returns the PMS instance. New instance is created if needed.
+	 * @return {@link PMS}
+	 */
 	public static PMS get() {
 		if (instance == null) {
 			synchronized (lock) {
@@ -1116,9 +1371,9 @@ public class PMS {
 					instance = new PMS();
 					try {
 						if (instance.init())
-							PMS.minimal("It's ready! You should see the server appears on XMB"); //$NON-NLS-1$
+							PMS.minimal("It's ready! You should see the server appear on the XMB"); //$NON-NLS-1$
 						else
-							PMS.minimal("Some serious errors occurs..."); //$NON-NLS-1$
+							PMS.minimal("A serious error occurred..."); //$NON-NLS-1$
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -1128,6 +1383,10 @@ public class PMS {
 		return instance;
 	}
 	
+	/**
+	 * @param filename
+	 * @return
+	 */
 	public Format getAssociatedExtension(String filename) {
 		PMS.debug("Search extension for " + filename); //$NON-NLS-1$
 		for(Format ext:extensions) {
