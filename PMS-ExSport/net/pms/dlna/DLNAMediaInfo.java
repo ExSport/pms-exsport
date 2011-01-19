@@ -227,7 +227,7 @@ public class DLNAMediaInfo implements Cloneable {
 		args[5] = "-msglevel";
 		args[6] = "all=4";
 		args[7] = "-vf";
-		args[8] = "scale=320:180";
+		args[8] = "scale=320:-2,expand=:180";
 		args[9] = "-frames";
 		args[10] = "1";
 		args[11] = "-vo";
@@ -839,7 +839,7 @@ public class DLNAMediaInfo implements Cloneable {
 				} else if (fr > 49.9 && fr < 50.1) {
 					validFrameRate = "50";
 				} else if (fr > 59.9 && fr < 59.99) {
-					validFrameRate = ratios?"60000/1001":"59.97";
+					validFrameRate = ratios?"60000/1001":"59.94";
 				} else if (fr >= 59.99 && fr < 60.1) {
 					validFrameRate = "60";
 				}
