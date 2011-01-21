@@ -1338,11 +1338,17 @@ private JTextField mencoder_ass_scale;
 
 		if (subString != null && !configuration.isMencoderDisableSubs() && !avisynth()) {
 			if (params.sid.type == DLNAMediaSubtitle.VOBSUB) {
-				// vobsub not supported in MEncoder :\
-				//cmdArray[cmdArray.length-4] = "-vobsub";
-				//cmdArray[cmdArray.length-3] = subString.substring(0, subString.length()-4);
-				cmdArray[cmdArray.length-4] = "-quiet"; //$NON-NLS-1$
-				cmdArray[cmdArray.length-3] = "-quiet"; //$NON-NLS-1$
+				// vobsub newly supported in MEncoder from Sherpya (Windows builds only)
+				if (Platform.isWindows()) {
+					cmdArray[cmdArray.length-4] = "-vobsub";
+					cmdArray[cmdArray.length-3] = subString.substring(0, subString.length()-4);
+               cmdArray = Arrays.copyOf(cmdArray, cmdArray.length +2);
+               cmdArray[cmdArray.length-4] = "-slang"; //$NON-NLS-1$
+               cmdArray[cmdArray.length-3] = "" + params.sid.lang; //$NON-NLS-1$
+				} else {
+					cmdArray[cmdArray.length-4] = "-quiet"; //$NON-NLS-1$
+					cmdArray[cmdArray.length-3] = "-quiet"; //$NON-NLS-1$
+				}
 			} else {
 				cmdArray[cmdArray.length-4] = "-sub"; //$NON-NLS-1$
 				cmdArray[cmdArray.length-3] = subString.replace(",", "\\,"); // commas in mencoder separates multiple subtitles files //$NON-NLS-1$ //$NON-NLS-2$
