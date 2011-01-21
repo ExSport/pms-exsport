@@ -310,6 +310,12 @@ public class RendererConfiguration {
 	public boolean isShowDVDTitleDuration() {
 		return getBoolean(SHOW_DVD_TITLE_DURATION, false);
 	}	
+  
+	private static final String CUSTOM_MENCODER_OPTIONS="CustomMencoderOptions";
+
+	public String getCustomMencoderOptions() {
+		return getString(CUSTOM_MENCODER_OPTIONS, null);
+	}
 	
 	private static final String SHOW_AUDIO_METADATA="ShowAudioMetadata";
 	private static final String SHOW_SUB_METADATA="ShowSubMetadata";
