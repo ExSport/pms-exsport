@@ -1091,9 +1091,11 @@ private JTextField mencoder_ass_scale;
 		}
 
 		String add = ""; //$NON-NLS-1$
-		if (configuration.getMencoderDecode() == null || configuration.getMencoderDecode().indexOf("-lavdopts") == -1) { //$NON-NLS-1$
+		if (params.mediaRenderer.getCustomMencoderOptions() != null) {
+			if (params.mediaRenderer.getCustomMencoderOptions().indexOf("-lavdopts") == -1) //$NON-NLS-1$
+				add = " -lavdopts debug=0"; //$NON-NLS-1$
+		} else if (configuration.getMencoderDecode() == null || configuration.getMencoderDecode().indexOf("-lavdopts") == -1) //$NON-NLS-1$
 			add = " -lavdopts debug=0"; //$NON-NLS-1$
-		}
 
 		String alternativeCodec = "";//"-ac ffac3,ffdca, ";  //$NON-NLS-1$
 		if (dvd)
@@ -1104,7 +1106,7 @@ private JTextField mencoder_ass_scale;
 			channels = wmv?2:CodecUtil.getRealChannelCount(configuration, params.aid);
 		PMS.debug("channels=" + channels);
 
-		StringTokenizer st = new StringTokenizer(alternativeCodec + "-channels " + channels + " " + configuration.getMencoderDecode() + add, " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		StringTokenizer st = new StringTokenizer(alternativeCodec + "-channels " + channels + " " + ((params.mediaRenderer.getCustomMencoderOptions()!=null)?(params.mediaRenderer.getCustomMencoderOptions()):configuration.getMencoderDecode()) + add, " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		overridenMainArgs = new String [st.countTokens()];
 		int i = 0;
 		boolean next = false;
