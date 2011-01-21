@@ -155,7 +155,7 @@ public abstract class Player {
 		if (matchedSub != null && params.sid == null) {
 			if (matchedSub.lang != null && matchedSub.lang.equals("off")) {
 				PMS.debug(" Disabled the subtitles: " + matchedSub);
-				return;
+				//return;
 			} else
 				params.sid = matchedSub;
 		}
@@ -168,16 +168,39 @@ public abstract class Player {
 			FileUtil.doesSubtitlesExists(video, media, false);
 			
 			if (configuration.getUseSubtitles()) {
+        boolean forcedSubsFound = false;
 				// priority to external subtitles
 				for(DLNAMediaSubtitle sub:media.subtitlesCodes) {
-					PMS.debug("Found subtitles track: " + sub);
-					if (sub.file != null) {
-						PMS.debug("Found external file: " + sub.file.getAbsolutePath());
-						params.sid = sub;
-						break;
+					if (matchedSub.lang !=null && matchedSub.lang.equals("off")) {
+						StringTokenizer st = new StringTokenizer(configuration.getForcedSubsTags(), ","); //$NON-NLS-1$
+						while (st != null && sub.flavor != null && st.hasMoreTokens()) {
+							String forcedTags = st.nextToken();
+							forcedTags = forcedTags.trim();
+							if (sub.flavor.toLowerCase().indexOf(forcedTags) > -1) {
+								if (Iso639.isCodesMatching(sub.lang,configuration.getMencoderSubLanguages())) {
+									PMS.debug("Forcing prefered subtitles : " + sub.getLang() + "/" + sub.flavor);
+									PMS.debug("Forced subtitles track : " + sub);
+									if (sub.file != null) {
+										PMS.debug("Found external forced file : " + sub.file.getAbsolutePath());
+									}
+									params.sid = sub;
+									forcedSubsFound = true;
+									break;
+								}
+							}
+						}
+						if (forcedSubsFound == true) break;
+					} else {
+						PMS.debug("Found subtitles track : " + sub);
+						if (sub.file != null) {
+							PMS.debug("Found external file : " + sub.file.getAbsolutePath());
+							params.sid = sub;
+							break;
+						}
 					}
 				}
 			}
+      if (matchedSub.lang !=null && matchedSub.lang.equals("off")) return;
 			
 			//
 			if (params.sid == null) {

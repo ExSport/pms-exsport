@@ -311,6 +311,22 @@ public class RendererConfiguration {
 		return getBoolean(SHOW_DVD_TITLE_DURATION, false);
 	}	
 	
+	private static final String SHOW_AUDIO_METADATA="ShowAudioMetadata";
+	private static final String SHOW_SUB_METADATA="ShowSubMetadata";
+	private static final String SOFT_SUB_SUPPORT="SoftSubSupport";
+	
+	public boolean isShowAudioMetadata() {
+		return getBoolean(SHOW_AUDIO_METADATA, true);
+	}
+	
+	public boolean isShowSubMetadata() {
+		return getBoolean(SHOW_SUB_METADATA, true);
+	}
+	
+	public boolean isSoftSubSupport() {
+		return getBoolean(SOFT_SUB_SUPPORT, false);
+	}
+	
 	private RendererConfiguration() throws ConfigurationException {
 		this(null);
 	}

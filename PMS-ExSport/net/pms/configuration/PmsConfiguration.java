@@ -125,6 +125,7 @@ public class PmsConfiguration {
 	private static final int DEFAULT_PROXY_SERVER_PORT = -1;
 	private static final String UNLIMITED_BITRATE = "0";
 	private static final String KEY_VIRTUAL_FOLDERS = "vfolders";
+  private static final String KEY_FORCED_SUBS_TAGS = "forced_subs_tags";
 	
 	private static final String DEFAULT_AVI_SYNTH_SCRIPT = 
 		  "#AviSynth script is now fully customisable !\n" 
@@ -1136,4 +1137,8 @@ public class PmsConfiguration {
 	public String getVirtualFolders() {
 		return getString(KEY_VIRTUAL_FOLDERS, "");
 	}
+  
+  public String getForcedSubsTags() {
+    return getString(KEY_FORCED_SUBS_TAGS, "forced");
+  }
 }
