@@ -20,6 +20,7 @@ package net.pms.dlna;
 
 import net.pms.PMS;
 import net.pms.dlna.virtual.VirtualFolder;
+import net.pms.dlna.virtual.VirtualVideoAction;
 import net.pms.encoders.MEncoderVideo;
 import net.pms.encoders.Player;
 import net.pms.encoders.TSMuxerVideo;
@@ -39,6 +40,15 @@ public class FileTranscodeVirtualFolder extends VirtualFolder {
 			DLNAResource child = children.get(0);
 			child.resolve();
 			if (child.ext.getProfiles() != null) {
+				VirtualVideoAction newChildFix = new VirtualVideoAction("  !!-- Fix 23.976/25fps A/V Mismatch --!!", PMS.getConfiguration().isFix25FPSAvMismatch()) { //$NON-NLS-1$
+					public boolean enable() {
+						PMS.getConfiguration().setMencoderForceFps(!PMS.getConfiguration().isFix25FPSAvMismatch());
+						PMS.getConfiguration().setFix25FPSAvMismatch(!PMS.getConfiguration().isFix25FPSAvMismatch());
+						return PMS.getConfiguration().isFix25FPSAvMismatch();
+					}              
+				};
+				children.add(newChildFix);
+				newChildFix.parent = newChildFix;
 				DLNAResource ref = child;
 				Player tsMuxer = null;
 				for(int i=0;i<child.ext.getProfiles().size();i++) {
