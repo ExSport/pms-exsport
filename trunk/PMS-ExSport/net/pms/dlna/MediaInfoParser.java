@@ -95,6 +95,11 @@ public class MediaInfoParser {
 									currentAudioTrack.lang = getLang(value);
 								else if (step == MediaInfo.StreamKind.Text)
 									currentSubTrack.lang = getLang(value);
+							} else if (key.equals("Title")) {
+								if (step == MediaInfo.StreamKind.Audio)
+									currentAudioTrack.flavor = getFlavor(value);
+								else if (step == MediaInfo.StreamKind.Text)
+									currentSubTrack.flavor = getFlavor(value);
 							} else if (key.equals("Width")) {
 								media.width = getPixelValue(value);
 							} else if (key.equals("Encryption") && !media.encrypted) {
@@ -376,6 +381,11 @@ public class MediaInfoParser {
 		return value;
 	}
 	
+	public static String getFlavor(String value) {
+		value = value.trim();
+		return value;
+	}
+		
 	public static String getDuration(String value) {
 		int h = 0, m = 0, s = 0;
 		StringTokenizer st = new StringTokenizer(value, " ");
