@@ -1498,8 +1498,8 @@ private JTextField mencoder_ass_scale;
 		if ((pcm || dts || mux) || (PMS.getConfiguration().isMencoderNoOutOfSync() && !noMC0NoSkip)) {
 			cmdArray = Arrays.copyOf(cmdArray, cmdArray.length +3);
 			cmdArray[cmdArray.length-5] = "-mc"; //$NON-NLS-1$
-			cmdArray[cmdArray.length-4] = "0"; //$NON-NLS-1$
-			cmdArray[cmdArray.length-3] = "-noskip"; //$NON-NLS-1$
+			cmdArray[cmdArray.length-4] = "0.005"; //$NON-NLS-1$
+			cmdArray[cmdArray.length-3] = "-quiet"; //$NON-NLS-1$
 			if (configuration.isFix25FPSAvMismatch()) {
 				cmdArray[cmdArray.length-4] = "0.005"; //$NON-NLS-1$
 				cmdArray[cmdArray.length-3] = "-quiet"; //$NON-NLS-1$
