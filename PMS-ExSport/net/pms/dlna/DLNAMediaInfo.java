@@ -63,6 +63,7 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import com.sun.jna.Platform;
 
 
 
@@ -566,9 +567,9 @@ public class DLNAMediaInfo implements Cloneable {
 										} catch (NumberFormatException nfe) {}
 									}
 								}
-							} else if (line.indexOf("Subtitle:") > -1 && !line.contains("tx3g") && !line.contains("dvdsub")) {
+							} else if (line.indexOf("Subtitle:") > -1 && !line.contains("tx3g")) {
 								DLNAMediaSubtitle lang = new DLNAMediaSubtitle();
-								lang.type = DLNAMediaSubtitle.EMBEDDED;
+								lang.type = (line.contains("dvdsub")&&Platform.isWindows()?DLNAMediaSubtitle.VOBSUB:DLNAMediaSubtitle.EMBEDDED);
 								int a = line.indexOf("(");
 								int b = line.indexOf("):", a);
 								if (a > -1 && b > a) {
