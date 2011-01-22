@@ -526,11 +526,21 @@ public class DLNAMediaInfo implements Cloneable {
                 int FFmpegMetaDataNr = FFmpegMetaData.nextIndex();
                 if (FFmpegMetaDataNr > -1) line = lines.get(FFmpegMetaDataNr);
                 if (line.indexOf("Metadata:") > -1) {
-                  line = lines.get(FFmpegMetaData.nextIndex()+1);
-                  int aa = line.indexOf(": ");
-                  int bb = line.length();
-                  if (aa > -1 && bb > aa) {
-                    audio.flavor = line.substring(aa+2, bb);
+                  FFmpegMetaDataNr = FFmpegMetaDataNr + 1;
+                  line = lines.get(FFmpegMetaDataNr);
+                  while (line.indexOf("      ") == 0) {
+                    if (line.toLowerCase().indexOf("title           :") > -1) {
+                      int aa = line.indexOf(": ");
+                      int bb = line.length();
+                        if (aa > -1 && bb > aa) {
+                          audio.flavor = line.substring(aa+2, bb);
+                          break;
+                        }
+                    }
+                    else {
+                      FFmpegMetaDataNr = FFmpegMetaDataNr + 1;
+                      line = lines.get(FFmpegMetaDataNr);
+                    }
                   }
                 }
                 audioCodes.add(audio);
@@ -581,13 +591,23 @@ public class DLNAMediaInfo implements Cloneable {
                 int FFmpegMetaDataNr = FFmpegMetaData.nextIndex();
                 if (FFmpegMetaDataNr > -1) line = lines.get(FFmpegMetaDataNr);
                 if (line.indexOf("Metadata:") > -1) {
-                  line = lines.get(FFmpegMetaData.nextIndex()+1);
-                  int aa = line.indexOf(": ");
-                  int bb = line.length();
-                  if (aa > -1 && bb > aa) {
-                    lang.flavor = line.substring(aa+2, bb);
-                  }
-                }
+                  FFmpegMetaDataNr = FFmpegMetaDataNr + 1;
+                  line = lines.get(FFmpegMetaDataNr);
+                  while (line.indexOf("      ") == 0) {
+                    if (line.toLowerCase().indexOf("title           :") > -1) {
+                      int aa = line.indexOf(": ");
+                      int bb = line.length();
+                        if (aa > -1 && bb > aa) {
+                          lang.flavor = line.substring(aa+2, bb);
+                          break;
+                        }
+                    }
+                    else {
+                      FFmpegMetaDataNr = FFmpegMetaDataNr + 1;
+                      line = lines.get(FFmpegMetaDataNr);
+                    }
+									}
+								}
                 subtitlesCodes.add(lang);
 							}
 						}

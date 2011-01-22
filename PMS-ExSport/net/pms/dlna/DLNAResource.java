@@ -658,18 +658,10 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				name += " {External Subtitles}"; 
 		
 		if (media_audio != null)
-			name = (player!=null?("[" + player.name() + "]"):"") + " {Audio: " + media_audio.getAudioCodec() + "/" + media_audio.getLang();
-			try {
-			name += ((media_audio.flavor!=null&&mediaRenderer.isShowAudioMetadata())?(" ("+media_audio.flavor+")"):"") + "}";
-			} catch (Throwable e) { // Catched
-      }
+			name = (player!=null?("[" + player.name() + "]"):"") + " {Audio: " + media_audio.getAudioCodec() + "/" + media_audio.getLang() + ((media_audio.flavor!=null && mediaRenderer!=null && mediaRenderer.isShowAudioMetadata())?(" ("+media_audio.flavor+")"):"") + "}";
 		
 		if (media_subtitle != null && media_subtitle.id != -1)
-			name += " {Sub: " + media_subtitle.getSubType() + "/" + media_subtitle.getLang();
-			try {
-			name += ((media_subtitle.flavor!=null&&mediaRenderer.isShowSubMetadata())?(" ("+media_subtitle.flavor+")"):"") + "}";
-			} catch (Throwable e) { // Catched
-      }
+			name += " {Sub: " + media_subtitle.getSubType() + "/" + media_subtitle.getLang() + ((media_subtitle.flavor!=null && mediaRenderer!=null && mediaRenderer.isShowSubMetadata())?(" ("+media_subtitle.flavor+")"):"") + "}";
 		
 		if (avisynth)
 			name = (player!=null?("[" + player.name()):"") + " + AviSynth]";
