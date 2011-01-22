@@ -28,14 +28,14 @@ public class ProcessUtil {
 		    WinProcess wp = new WinProcess(p);
 		    PMS.debug("Killing the Windows process: " + wp.getPid());
 		    /* Modification made by ExSport due to problems with unrelated processes termination */
-		    Process process = Runtime.getRuntime().exec("taskkill /PID " + wp.getPid() + " /T");
+		    Process process = Runtime.getRuntime().exec("taskkill /PID " + wp.getPid() + " /T /F");
 		    new Gob(process.getErrorStream()).start();
 		    new Gob(process.getInputStream()).start();
 		    int exit = process.waitFor();
 		    if (exit != 0) {
-		    PMS.debug("\"taskkill /PID " + wp.getPid() + " /T\" not successful... process was obviously already terminated");
+		    PMS.debug("\"taskkill /PID " + wp.getPid() + " /T /F\" not successful... process was obviously already terminated");
 		    } else {
-		      PMS.debug("\"taskkill /PID " + wp.getPid() + " /T\" successful !");
+		      PMS.debug("\"taskkill /PID " + wp.getPid() + " /T /F\" successful !");
 		    }
 		} catch (Throwable e) { /* shouldn't happen */
 		    p.destroy(); /* kill the process non-recursively; shouldn't get here */
