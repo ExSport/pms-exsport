@@ -24,7 +24,7 @@ public class HTMLConsole {
 	
 	public static String servePage(String resource) {
 		StringBuffer sb = new StringBuffer();
-		sb.append("<html><title>PS3 Media Server HTML Console</title></html><body>");
+		sb.append("<html><head><title>PS3 Media Server HTML Console</title></head><body>");
 		
 		if (resource.equals("compact") && PMS.getConfiguration().getUseCache()) {
 			PMS.get().getDatabase().compact();
@@ -43,7 +43,7 @@ public class HTMLConsole {
 			sb.append( "<p align=center><b>Scan stopped!</b></p><br>" );
 		} 
 		
-		sb.append("<p align=center><img src='/images/Play1Hot_256.png'><br>PS3 Media Server HTML console<br><br>Menu:<br>");
+		sb.append("<p align=center><img src='/images/thumbnail-256.png'><br>PS3 Media Server HTML console<br><br>Menu:<br>");
 		sb.append("<a href=\"home\">Home</a><br>");
 		sb.append("<a href=\"scan\">Scan folders</a><br>");
 		sb.append("<a href=\"compact\">Shrink media library database (not recommended)</a>");

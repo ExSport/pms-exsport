@@ -137,16 +137,17 @@ public class AviDemuxerInputStream extends InputStream {
 					ProcessWrapper pwi = new ProcessWrapperLiteImpl(process);
 					attachedProcesses.add(pwi);
 					//process = pb.start();
+					// "Gob": a cryptic name for (e.g.) StreamGobbler - i.e. a stream
+					// consumer that reads and discards the stream
 					new Gob(process.getErrorStream()).start();
 					new Gob(process.getInputStream()).start();
 					//Thread.sleep(150);
 					realIS = tsPipe.getInputStream();
-					process.waitFor();
+					ProcessUtil.waitFor(process);
 					PMS.debug("tsMuxer Muxing finished"); //$NON-NLS-1$
 				} catch (Exception e) {
 					PMS.error(null, e);
 				}
-				
 	        }
 		};
 		Runnable r2 = new Runnable() {

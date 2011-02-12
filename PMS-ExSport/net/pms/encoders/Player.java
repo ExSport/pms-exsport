@@ -168,7 +168,7 @@ public abstract class Player {
 			FileUtil.doesSubtitlesExists(video, media, false);
 			
 			if (configuration.getUseSubtitles()) {
-        boolean forcedSubsFound = false;
+        		boolean forcedSubsFound = false;
 				// priority to external subtitles
 				for(DLNAMediaSubtitle sub:media.subtitlesCodes) {
 					if (matchedSub.lang !=null && matchedSub.lang.equals("off")) {
@@ -200,7 +200,7 @@ public abstract class Player {
 					}
 				}
 			}
-      if (matchedSub.lang !=null && matchedSub.lang.equals("off")) return;
+      		if (matchedSub.lang !=null && matchedSub.lang.equals("off")) return;
 			
 			//
 			if (params.sid == null) {

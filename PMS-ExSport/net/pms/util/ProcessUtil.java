@@ -1,80 +1,148 @@
 package net.pms.util;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 
 import com.sun.jna.Platform;
 
-import org.jvnet.winp.WinProcess;
-import org.jvnet.winp.NotWindowsException;
-
 import net.pms.PMS;
 import net.pms.io.Gob;
 
-public class ProcessUtil {
+// see https://code.google.com/p/ps3mediaserver/issues/detail?id=680
+// for background/issues/discussion related to this class
 
-    /* chocolateboy 2010-02-16: cleaned up process termination to prevent orphan processes */
-	public static void destroy(Process p) {
-		if (p != null) {
-	    if (Platform.isWindows()) {
-		/*
-		 * This calls TerminateProcess() on the spawned process and all its children
-		 * (from leaves to root). This is the best we can do on Windows,
-		 * as it doesn't provide any other way to terminate a process.
-		 * Killing the process and its children ensures no orphan
-		 * processes are left behind.
-		 */
+public class ProcessUtil {
+	// how long to wait in milliseconds until a kill -TERM on Unix has been deemed to fail
+	private static final int TERM_TIMEOUT = 10000;
+	// how long to wait in milliseconds until a kill -ALRM on Unix has been deemed to fail
+	private static final int ALRM_TIMEOUT = 2000;
+
+	// work around a Java bug
+	// see: http://kylecartmell.com/?p=9
+	public static int waitFor(Process p) {
+		int exit = -1;
 
 		try {
-		    WinProcess wp = new WinProcess(p);
-		    PMS.debug("Killing the Windows process: " + wp.getPid());
-		    /* Modification made by ExSport due to problems with unrelated processes termination */
-		    Process process = Runtime.getRuntime().exec("taskkill /PID " + wp.getPid() + " /T /F");
-		    new Gob(process.getErrorStream()).start();
-		    new Gob(process.getInputStream()).start();
-		    int exit = process.waitFor();
-		    if (exit != 0) {
-		    PMS.debug("\"taskkill /PID " + wp.getPid() + " /T /F\" not successful... process was obviously already terminated");
-		    } else {
-		      PMS.debug("\"taskkill /PID " + wp.getPid() + " /T /F\" successful !");
-		    }
-		} catch (Throwable e) { /* shouldn't happen */
-		    p.destroy(); /* kill the process non-recursively; shouldn't get here */
+			exit = p.waitFor();
+		} catch (InterruptedException e) {
+			Thread.interrupted();
 		}
-	    } else {
-			/* get the PID - only used for logging i.e. not directly */
-			if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
-				try {
-					Field f = p.getClass().getDeclaredField("pid");
-					f.setAccessible(true);
-					int pid = f.getInt(p);
-					PMS.debug("Killing the Unix process: " + pid);
-				} catch (Throwable e) {
-				        PMS.info("Can't determine the Unix process ID: " + e.getMessage());
-				}
+
+		return exit;
+	}
+
+	// get the process ID on Unix (returns null otherwise)
+	public static Integer getProcessID(Process p) {
+		Integer pid = null;
+
+		if (p != null && p.getClass().getName().equals("java.lang.UNIXProcess")) {
+			try {
+				Field f = p.getClass().getDeclaredField("pid");
+				f.setAccessible(true);
+				pid = f.getInt(p);
+			} catch (Throwable e) {
+				PMS.info("Can't determine the Unix process ID: " + e.getMessage());
+			}
+		}
+
+		return pid;
+	}
+
+	// kill -9 a Unix process
+	public static void kill(Integer pid) {
+		kill(pid, 9);
+	}
+
+	/*
+	 * FIXME: this is a hack - destroy() *should* work
+	 *
+	 * call chain (innermost last):
+	 *
+	 *     WaitBufferedInputStream.close
+	 *     BufferedOutputFile.detachInputStream
+	 *     ProcessWrapperImpl.stopProcess
+	 *     ProcessUtil.destroy
+	 *     ProcessUtil.kill
+	 *
+	 * my best guess is that the process's stdout/stderr streams
+	 * aren't being/haven't been fully/promptly consumed.
+	 * From the abovelinked article:
+	 *
+	 *     The Java 6 API clearly states that failure to promptly
+	 *     “read the output stream of the subprocess may cause the subprocess
+	 *     to block, and even deadlock.”
+	 *
+	 * This is corroborated by the fact that destroy() works fine if the
+	 * process is allowed to run to completion:
+	 *
+	 *     https://code.google.com/p/ps3mediaserver/issues/detail?id=680#c11
+	 */
+
+	// send a Unix process the specified signal
+	public static boolean kill(Integer pid, int signal) {
+		boolean killed = false;
+		// FIXME: this should really be a warning
+		PMS.info("Sending kill -" + signal + " to the Unix process: " + pid);
+		try {
+			Process process = Runtime.getRuntime().exec("kill -" + signal + " " + pid);
+			// "Gob": a cryptic name for (e.g.) StreamGobbler - i.e. a stream
+			// consumer that reads and discards the stream
+			new Gob(process.getErrorStream()).start();
+			new Gob(process.getInputStream()).start();
+			int exit = waitFor(process);
+			if (exit == 0) {
+				killed = true;
+				PMS.info("Successfully sent kill -" + signal + " to the Unix process: " + pid);
+			}
+		} catch (IOException e) {
+			PMS.error("Error calling: kill -9 " + pid, e);
+		}
+
+		return killed;
+	}
+
+	// destroy a process safely (kill -TERM on Unix)
+	public static void destroy(final Process p) {
+		if (p != null) {
+			final Integer pid = getProcessID(p);
+
+			if (pid != null) { // Unix only
+				PMS.debug("Killing the Unix process: " + pid);
+				Runnable r = new Runnable() {
+					public void run() {
+						try {
+							Thread.sleep(TERM_TIMEOUT);
+						} catch (InterruptedException e) {}
+
+						try {
+							p.exitValue();
+						} catch (IllegalThreadStateException itse) { // still running: nuke it
+							// kill -14 (ALRM) works (for MEncoder) and is less dangerous than kill -9
+							// so try that first 
+							if (!kill(pid, 14)) {
+								try {
+									// This is a last resort, so let's not be too eager
+									Thread.sleep(ALRM_TIMEOUT);
+								} catch (InterruptedException ie) {}
+
+								kill(pid, 9);
+							}
+						}
+					}
+				};
+
+				Thread failsafe = new Thread(r);
+				failsafe.start();
 			}
 
-			/*
-			 * Squashed bug - send Unix processes a TERM signal rather than KILL.
-			 *
-			 * destroy() sends the spawned process a TERM signal.
-			 * This ensures the process is given the opportunity
-			 * to shutdown cleanly. *Extremely* rare cases where this doesn't
-			 * happen are less of a problem than extremely common cases
-			 * where kill -9 (KILL) creates orphan processes. In the former
-			 * case, the stubborn processes may still be shut down when PMS
-			 * exits.
-			 */
-
 			p.destroy();
-	    }
-    }
-  }
-	
+		}
+	}
+
 	public static String getShortFileNameIfWideChars(String name) {
 		if (Platform.isWindows()) {
 			return PMS.get().getRegistry().getShortPathNameW(name);
 		}
 		return name;
 	}
-
 }

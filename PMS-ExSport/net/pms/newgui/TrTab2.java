@@ -122,8 +122,9 @@ public class TrTab2 {
 	
 	public JComponent build() {
 		FormLayout mainlayout = new FormLayout(
-				"left:pref, pref, 7dlu, pref, pref, 0:grow", //$NON-NLS-1$
-				"top:p, 3dlu" ); //$NON-NLS-1$
+			"left:pref, pref, 7dlu, pref, pref, 10:grow", //$NON-NLS-1$
+			"top:10:grow" //$NON-NLS-1$
+		); 
 		PanelBuilder builder = new PanelBuilder(mainlayout);
         builder.setBorder(Borders.DLU4_BORDER);
 		
@@ -138,9 +139,11 @@ public class TrTab2 {
 
 	public JComponent buildRightTabbedPane() {
 		cl = new CardLayout();
-		  tabbedPane = new JPanel (cl);
-		  tabbedPane.setBorder(BorderFactory.createEmptyBorder());
-		return tabbedPane;
+		tabbedPane = new JPanel (cl);
+		tabbedPane.setBorder(BorderFactory.createEmptyBorder());
+		JScrollPane scrollPane = new JScrollPane(tabbedPane);
+		scrollPane.setBorder(null);
+		return scrollPane;
 	}
 
 	public JComponent buildLeft() {
@@ -354,14 +357,9 @@ public class TrTab2 {
         cmp.setFont(cmp.getFont().deriveFont(Font.BOLD));
         
 	builder.addLabel(Messages.getString("NetworkTab.6").replaceAll("MAX_BUFFER_SIZE", configuration.getMaxMemoryBufferSizeStr()),  cc.xy(1,  3)); //$NON-NLS-1$
-        builder.add(maxbuffer,          cc.xy(3,  3)); 
+        builder.add(maxbuffer,          cc.xy(3,  3));
 
-	String corePlural = " core";
-	if(Runtime.getRuntime().availableProcessors() > 1) {
-		corePlural = " cores";
-	}
-
-	builder.addLabel(Messages.getString("NetworkTab.7") + Runtime.getRuntime().availableProcessors() + corePlural + Messages.getString("NetworkTab.8"),  cc.xy(1,  5)); //$NON-NLS-1$ //$NON-NLS-2$
+	builder.addLabel(Messages.getString("NetworkTab.7") + Runtime.getRuntime().availableProcessors() + ")",  cc.xy(1,  5)); //$NON-NLS-1$ //$NON-NLS-2$
         
         String[] guiCores = new String[MAX_CORES];
         for(int i=0;i<MAX_CORES;i++)
