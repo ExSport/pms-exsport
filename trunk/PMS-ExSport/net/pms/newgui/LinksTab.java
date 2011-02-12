@@ -23,11 +23,11 @@ import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
-
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JProgressBar;
+import javax.swing.JScrollPane;
 
 import net.pms.Messages;
 import net.pms.PMS;
@@ -38,11 +38,9 @@ import com.jgoodies.forms.layout.CellConstraints;
 import com.jgoodies.forms.layout.FormLayout;
 
 public class LinksTab {
-	
 	private ImagePanel imagePanel;
 	private JLabel jl ;
 	private JProgressBar jpb;
-
 	
 	public JProgressBar getJpb() {
 		return jpb;
@@ -66,7 +64,7 @@ public class LinksTab {
 	        builder.setOpaque(true);
 	        CellConstraints cc = new CellConstraints();
 
-        	final LinkMouseListener pms3Link = new LinkMouseListener("PS3 Media Server v" + PMS.VERSION,
+        	final LinkMouseListener pms3Link = new LinkMouseListener("PS3 Media Server " + PMS.VERSION,
         			"http://code.google.com/p/ps3mediaserver/");
 	        builder.addLabel(pms3Link.getLabel(), cc.xy(2, 1, "center, fill")).addMouseListener(pms3Link);
 	        
@@ -96,7 +94,9 @@ public class LinksTab {
 	        builder.addLabel(mplayerSherpiaBuildsLink.getLabel(), 
 	        		cc.xy(2, 13, "center, fill")).addMouseListener(mplayerSherpiaBuildsLink);
 	        
-	        return builder.getPanel();
+			JScrollPane scrollPane = new JScrollPane(builder.getPanel());
+			scrollPane.setBorder(null);
+			return scrollPane;
 	}
 
 	private static class LinkMouseListener implements MouseListener
@@ -153,7 +153,7 @@ public class LinksTab {
 	public ImagePanel buildImagePanel() {
 		BufferedImage bi = null;
 		try {
-			bi = ImageIO.read(LooksFrame.class.getResourceAsStream("/resources/images/Play1Hot_256.png")); //$NON-NLS-1$
+			bi = ImageIO.read(LooksFrame.class.getResourceAsStream("/resources/images/icon-256.png")); //$NON-NLS-1$
 		} catch (IOException e) {
 		}
 		return new ImagePanel(bi);

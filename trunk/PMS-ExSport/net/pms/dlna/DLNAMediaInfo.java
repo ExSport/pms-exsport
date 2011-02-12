@@ -65,8 +65,6 @@ import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import com.sun.jna.Platform;
 
-
-
 public class DLNAMediaInfo implements Cloneable {
 		
 	public static final long ENDFILE_POS = 99999475712L;
@@ -519,8 +517,8 @@ public class DLNAMediaInfo implements Cloneable {
 										audio.bitsperSample = 32;
 									} else if (token.equals("s24")) {
 										audio.bitsperSample = 24;
-                  } else if (token.equals("s16")) {
-                    audio.bitsperSample = 16;
+									} else if (token.equals("s16")) {
+										audio.bitsperSample = 16;
 									}
 								}
                 int FFmpegMetaDataNr = FFmpegMetaData.nextIndex();

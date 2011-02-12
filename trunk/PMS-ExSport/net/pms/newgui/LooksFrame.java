@@ -18,9 +18,6 @@
  */
 package net.pms.newgui;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -113,8 +110,8 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 	public LooksFrame(AutoUpdater autoUpdater, PmsConfiguration configuration) {
 		this.autoUpdater = autoUpdater;
 		this.configuration = configuration;
-		assertThat(this.autoUpdater, notNullValue());
-		assertThat(this.configuration, notNullValue());
+		assert this.autoUpdater != null;
+		assert this.configuration != null;
 		autoUpdater.addObserver(this);
 		update(autoUpdater, null);
 		Options.setDefaultIconSize(new Dimension(18, 18));
@@ -223,7 +220,7 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 		}
 		
 		setTitle("Test"); //$NON-NLS-1$
-		setIconImage(readImageIcon("Play1Hot_32.png").getImage()); //$NON-NLS-1$
+		setIconImage(readImageIcon("icon-32.png").getImage()); //$NON-NLS-1$
 		
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		
@@ -233,12 +230,11 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 		/*
 		 * handle scrollbars:
 		 *
-		 * 1) if scrollbars have been forced (-Dscrollbars=true), always display them
-		 * 2) if scrollbars have been disabled (-Dscrollbars=false), never display them
-		 * 3) otherwise display them as needed
-		 *
+		 * 1) forced scrollbars (-Dscrollbars=true): always display them
+		 * 2) optional scrollbars (-Dscrollbars=optional): display them as needed
+		 * 3) otherwise (default): don't display them
 		 */
-		if (showScrollbars == "true") {
+		if (showScrollbars.equals("true")) {
 			setContentPane(
 				new JScrollPane(
 					jp,
@@ -246,9 +242,7 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS
 				)
 			);
-		} else if (showScrollbars == "false") {
-			setContentPane(jp);
-		} else {
+		} else if (showScrollbars.equals("optional")) {
 			setContentPane(
 				new JScrollPane(
 					jp,
@@ -256,9 +250,11 @@ public class LooksFrame extends JFrame implements IFrame, Observer {
 					ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED
 				)
 			);
+		} else {
+			setContentPane(jp);
 		}
 
-		this.setTitle("Java PS3 Media Server v" + PMS.VERSION); //$NON-NLS-1$
+		this.setTitle("PS3 Media Server " + PMS.VERSION + " - FOR TESTING ONLY, POSSIBLY UNSTABLE"); //$NON-NLS-1$
 		this.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 		Dimension screenSize = getToolkit().getScreenSize();
 
