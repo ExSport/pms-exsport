@@ -48,6 +48,7 @@ import net.pms.external.StartStopListener;
 import net.pms.formats.Format;
 import net.pms.io.OutputParams;
 import net.pms.io.ProcessWrapper;
+import net.pms.io.SizeLimitInputStream;
 import net.pms.network.HTTPResource;
 import net.pms.util.FileUtil;
 import net.pms.util.ImagesUtil;
@@ -1120,6 +1121,16 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				((IPushOutput) this).push(out);
 				if (low > 0 && fis != null)
 					fis.skip(low);
+// WoH #822
+				if(high > low && fis != null)
+				{
+					long bytes = (high - (low < 0 ? 0 : low)) + 1;
+					
+					PMS.debug("Using size-limiting stream (" + bytes + " bytes)");
+					SizeLimitInputStream slis = new SizeLimitInputStream(fis, bytes);
+					return slis;
+				}
+// /WoH #822
 				return fis;
 			}
 			
@@ -1133,6 +1144,15 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				fis = getInputStream();
 			if (low > 0 && fis != null)
 				fis.skip(low);
+// WoH #822
+			if(high > low && fis != null)
+			{
+				long bytes = (high - (low < 0 ? 0 : low)) + 1;
+				
+				PMS.debug("Using size-limiting stream (" + bytes + " bytes)");
+				fis = new SizeLimitInputStream(fis, bytes);
+			}
+// /WoH #822			
 			if (timeseek != 0 && this instanceof RealFile)
 				fis.skip(MpegUtil.getPossitionForTimeInMpeg(((RealFile)this).getFile(), (int) timeseek));
 			return fis;

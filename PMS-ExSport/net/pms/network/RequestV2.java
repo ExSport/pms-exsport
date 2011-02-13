@@ -227,6 +227,9 @@ public class RequestV2 extends HTTPResource {
 							highRange = totalsize -1;
 						}
 						output.setHeader(HttpHeaders.Names.CONTENT_RANGE, "bytes " + lowRange + "-" + highRange + "/" +totalsize);
+// WoH #822
+						CLoverride = totalsize;
+// WoH #822
 					}
 					if (contentFeatures != null)
 						output.setHeader("ContentFeatures.DLNA.ORG", files.get(0).getDlnaContentFeatures());
@@ -509,7 +512,10 @@ public class RequestV2 extends HTTPResource {
 	        }
 		} else if (inputStream != null) {
 			if (CLoverride > -1) {
-				if (lowRange > 0 && highRange > 0) {
+// WoH #822
+//				if (lowRange > 0 && highRange > 0) {
+				if (highRange > 0) {
+// WoH #822
 					output.setHeader(HttpHeaders.Names.CONTENT_LENGTH, "" + (highRange-lowRange+1));
 				} else if (CLoverride != DLNAMediaInfo.TRANS_SIZE) // since 2.50, it's wiser not to send an arbitrary Content length,
 																	// as the PS3 displays a network error and asks the last seconds of the transcoded video
