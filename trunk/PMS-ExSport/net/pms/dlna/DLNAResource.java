@@ -30,8 +30,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang.StringUtils;
-
 import net.pms.PMS;
 import net.pms.configuration.FormatConfiguration;
 import net.pms.configuration.RendererConfiguration;
@@ -54,6 +52,8 @@ import net.pms.util.FileUtil;
 import net.pms.util.ImagesUtil;
 import net.pms.util.Iso639;
 import net.pms.util.MpegUtil;
+
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Represents any item that can be browsed via the UPNP ContentDirectory service.
@@ -237,8 +237,15 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 */
 
 	public void addChild(DLNAResource child) {
-		//child.expert = expert;
-		child.parent = this;
+		// child may be null (spotted - via rootFolder.addChild() - in a misbehaving plugin
+
+	    if (child == null) {
+			PMS.error("Attempt to add a null child to " + getName(), new NullPointerException("Invalid DLNA resource"));
+			return;
+		}
+	    
+	    child.parent = this;
+
 		if (parent != null)
 			defaultRenderer = parent.defaultRenderer;
 		if (child.isValid()) {
@@ -450,7 +457,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 					if (!resource.discovered) {
 						resource.discoverChildren();
 						boolean ready = true;
-						if (renderer.isMediaParserV2())
+						if (renderer.isMediaParserV2() && !renderer.isAnalyzeFolderAllFiles())
 							ready = resource.analyzeChildren(count);
 						else
 							ready = resource.analyzeChildren(-1);
@@ -1178,7 +1185,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				
 			if (externalProcess == null || externalProcess.isDestroyed()) {
 				PMS.minimal("Starting transcode/remux of " + getName());
-				externalProcess = player.launchTranscode(getSystemName(), media, params);
+				externalProcess = player.launchTranscode(getSystemName(), this, media, params);
 				if (params.waitbeforestart > 0) {
 					PMS.debug("Sleeping for " + params.waitbeforestart + " milliseconds");
 					try {
@@ -1200,7 +1207,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						}
 					};
 					new Thread(r).start();
-					ProcessWrapper newExternalProcess = player.launchTranscode(getSystemName(), media, params);
+					ProcessWrapper newExternalProcess = player.launchTranscode(getSystemName(), this, media, params);
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
