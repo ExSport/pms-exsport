@@ -125,7 +125,8 @@ public class PmsConfiguration {
 	private static final int DEFAULT_PROXY_SERVER_PORT = -1;
 	private static final String UNLIMITED_BITRATE = "0";
 	private static final String KEY_VIRTUAL_FOLDERS = "vfolders";
-  private static final String KEY_FORCED_SUBS_TAGS = "forced_subs_tags";
+	private static final String KEY_PLUGIN_DIRECTORY = "plugins";
+	private static final String KEY_FORCED_SUBS_TAGS = "forced_subs_tags";
 	
 	private static final String DEFAULT_AVI_SYNTH_SCRIPT = 
 		  "#AviSynth script is now fully customisable !\n" 
@@ -216,6 +217,14 @@ public class PmsConfiguration {
 	
 	public String getMencoderMTPath() {
 		return programPaths.getMencoderMTPath();
+	}
+
+	public String getMencoderOlderPath() {
+		return programPaths.getMencoderOlderPath();
+	}
+
+	public String getMencoderOlderMTPath() {
+		return programPaths.getMencoderOlderMTPath();
 	}
 	
 	public String getDCRawPath() {
@@ -756,7 +765,7 @@ public class PmsConfiguration {
 	}
 
 	public String getMencoderMainSettings() {
-		return getString(KEY_MENCODER_MAIN_SETTINGS, "keyint=1:vqscale=1:vqmin=2");
+		return getString(KEY_MENCODER_MAIN_SETTINGS, "keyint=5:vqscale=1:vqmin=2");
 	}
 
 	public void setMencoderMainSettings(String value) {
@@ -901,7 +910,7 @@ public class PmsConfiguration {
 	public void setForceTranscode(String value) {
 		configuration.setProperty(KEY_FORCETRANSCODE, value);
 	}
-	
+
 	public void setMencoderMT(boolean value) {
 		configuration.setProperty(KEY_MENCODER_MT, value);
 	}
@@ -1013,11 +1022,11 @@ public class PmsConfiguration {
 	public boolean isUseMplayerForVideoThumbs() {
 		return getBoolean(KEY_USE_MPLAYER_FOR_THUMBS, false);
 	}
-	
+
 	public String getIpFilter(){
 		return getString(KEY_IP_FILTER, "");
 	}
-	
+
 	public void setIpFilter(String value){
 		configuration.setProperty(KEY_IP_FILTER, value);
 	}
@@ -1155,5 +1164,13 @@ public class PmsConfiguration {
 
 	public String getPmsConfPath() {
 		return pmsConfPath;
+	}
+
+	public String getPluginDirectory() {
+		return getString(KEY_PLUGIN_DIRECTORY, "plugins");
+	}
+
+	public void setPluginDirectory(String value) {
+		configuration.setProperty(KEY_PLUGIN_DIRECTORY, value);
 	}
 }

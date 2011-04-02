@@ -23,6 +23,21 @@ class LinuxDefaultPaths implements ProgramPaths {
 	}
 
 	@Override
+	public String getMencoderMTPath() {
+		return "mencoder_mt";
+	}
+
+	@Override
+	public String getMencoderOlderPath() {
+		return "mencoder";
+	}
+
+	@Override
+	public String getMencoderOlderMTPath() {
+		return "mencoder_mt";
+	}
+
+	@Override
 	public String getMplayerPath() {
 		return "mplayer";
 	}
@@ -35,11 +50,6 @@ class LinuxDefaultPaths implements ProgramPaths {
 	@Override
 	public String getVlcPath() {
 		return "vlc";
-	}
-
-	@Override
-	public String getMencoderMTPath() {
-		return "mencoder_mt";
 	}
 
 	@Override
