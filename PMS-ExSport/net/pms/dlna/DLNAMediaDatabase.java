@@ -415,7 +415,7 @@ public class DLNAMediaDatabase implements Runnable {
 			if (media != null && id > -1) {
 				PreparedStatement insert = null;
 				if (media.audioCodes.size() > 0)
-					insert = conn.prepareStatement("INSERT INTO AUDIOTRACKS VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"); //$NON-NLS-1$
+					insert = conn.prepareStatement("INSERT INTO AUDIOTRACKS VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"); //$NON-NLS-1$
 				for(DLNAMediaAudio audio:media.audioCodes) {
 					insert.clearParameters();
 					insert.setInt(1, id);
@@ -433,7 +433,7 @@ public class DLNAMediaDatabase implements Runnable {
 					insert.setInt(13, audio.year);
 					insert.setInt(14, audio.track);
 					insert.setInt(15, audio.delay);
-					insert.setString(15, StringUtils.trimToEmpty(audio.muxingModeAudio));
+					insert.setString(16, StringUtils.trimToEmpty(audio.muxingModeAudio));
 					insert.executeUpdate();
 				}
 				
