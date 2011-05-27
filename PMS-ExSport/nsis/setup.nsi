@@ -1,5 +1,6 @@
 
 !include "MUI.nsh"
+!include "FileFunc.nsh"
 
 !define REG_KEY_UNINSTALL "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\PS3 Media Server"
 !define REG_KEY_SOFTWARE "SOFTWARE\PS3 Media Server"
@@ -44,20 +45,31 @@ Section "Program Files"
   File "MediaInfo64.dll"
   File "CHANGELOG"
   File "README"
-  File "FAQ"
   File "LICENSE.txt"
+  File "logback.xml"
+  File "icon.ico"
   
   ;Store install folder
   WriteRegStr HKCU "${REG_KEY_SOFTWARE}" "" $INSTDIR
  
  ;Create uninstaller
  WriteUninstaller "$INSTDIR\Uninst.exe"
- 
+
   WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayName" "PS3 Media Server"
+  WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayIcon" "$INSTDIR\icon.ico"
+  WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "DisplayVersion" "1.23.0"
+  WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "Publisher" "PS3 Media Server"
+  WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "URLInfoAbout" "http://www.ps3mediaserver.org"
   WriteRegStr HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}" "UninstallString" '"$INSTDIR\uninst.exe"'
+
+  ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
+  IntFmt $0 "0x%08X" $0
+  WriteRegDWORD HKLM "${REG_KEY_UNINSTALL}" "EstimatedSize" "$0"
+
   WriteUnInstaller "uninst.exe"
 
-  SetOutPath "$APPDATA\PMS"
+  ReadENVStr $R0 ALLUSERSPROFILE
+  SetOutPath "$R0\PMS"
   SetOverwrite off
   File "WEB.conf"
 SectionEnd
@@ -90,17 +102,20 @@ Section "Uninstall"
   Delete /REBOOTOK "$INSTDIR\CHANGELOG"
   Delete /REBOOTOK "$INSTDIR\WEB.conf"
   Delete /REBOOTOK "$INSTDIR\README"
-  Delete /REBOOTOK "$INSTDIR\FAQ"
   Delete /REBOOTOK "$INSTDIR\LICENSE.txt"
   Delete /REBOOTOK "$INSTDIR\debug.log"
+  Delete /REBOOTOK "$INSTDIR\logback.xml"
+  Delete /REBOOTOK "$INSTDIR\icon.ico"
   RMDir /REBOOTOK "$INSTDIR"
-  
- 
+
   Delete /REBOOTOK "$DESKTOP\PS3 Media Server.lnk"
   RMDir /REBOOTOK "$SMPROGRAMS\PS3 Media Server"
   Delete /REBOOTOK "$SMPROGRAMS\PS3 Media Server\PS3 Media Server.lnk"
-   Delete /REBOOTOK "$SMPROGRAMS\PS3 Media Server\Uninstall.lnk"
+  Delete /REBOOTOK "$SMPROGRAMS\PS3 Media Server\Uninstall.lnk"
  
   DeleteRegKey HKEY_LOCAL_MACHINE "${REG_KEY_UNINSTALL}"
   DeleteRegKey HKCU "${REG_KEY_SOFTWARE}"
+
+  nsSCM::Stop "PS3 Media Server"
+  nsSCM::Remove "PS3 Media Server"
 SectionEnd
