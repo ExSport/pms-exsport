@@ -1125,7 +1125,7 @@ public class MEncoderVideo extends Player {
 				add = " -lavdopts debug=0"; //$NON-NLS-1$
 		} else if (configuration.getMencoderDecode() == null || configuration.getMencoderDecode().indexOf("-lavdopts") == -1) //$NON-NLS-1$
 			add = " -lavdopts debug=0"; //$NON-NLS-1$
-
+		
 		String alternativeCodec = "";//"-ac ffac3,ffdca, ";  //$NON-NLS-1$
 		if (dvd) {
 			alternativeCodec = ""; //$NON-NLS-1$
@@ -1136,7 +1136,7 @@ public class MEncoderVideo extends Player {
 		}
 		PMS.debug("channels=" + channels);
 
-		StringTokenizer st = new StringTokenizer(alternativeCodec + "-channels " + channels + " " + ((params.mediaRenderer.getCustomMencoderOptions()!=null)?(params.mediaRenderer.getCustomMencoderOptions()):configuration.getMencoderDecode()) + add, " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		StringTokenizer st = new StringTokenizer(alternativeCodec + "-channels " + channels + " " + ((params.mediaRenderer.getCustomMencoderOptions()!=null && !(params.mediaRenderer.getCustomMencoderOptions().indexOf("expand=") != -1 && dvd))?(params.mediaRenderer.getCustomMencoderOptions()):configuration.getMencoderDecode()) + add, " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		overridenMainArgs = new String[st.countTokens()];
 		int i = 0;
 		boolean next = false;

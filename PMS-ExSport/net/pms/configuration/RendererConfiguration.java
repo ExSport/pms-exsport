@@ -326,8 +326,6 @@ public class RendererConfiguration {
 	
 	private static final String SHOW_AUDIO_METADATA="ShowAudioMetadata";
 	private static final String SHOW_SUB_METADATA="ShowSubMetadata";
-	private static final String SOFT_SUB_SUPPORT="SoftSubSupport";
-	private static final String CUSTOM_TOTAL_MATCHES="CustomTotalMatches";
 	
 	public boolean isShowAudioMetadata() {
 		return getBoolean(SHOW_AUDIO_METADATA, true);
@@ -336,15 +334,7 @@ public class RendererConfiguration {
 	public boolean isShowSubMetadata() {
 		return getBoolean(SHOW_SUB_METADATA, true);
 	}
-	
-	public boolean isSoftSubSupport() {
-		return getBoolean(SOFT_SUB_SUPPORT, false);
-	}
-	
-	public int getCustomTotalMatches() {
-		return getInt(CUSTOM_TOTAL_MATCHES, -1);
-	}
-	
+
 	private RendererConfiguration() throws ConfigurationException {
 		this(null);
 	}
