@@ -24,14 +24,15 @@ You can define renderer specific keywords which works on renderer level.<br><br>
 # Example below adds black bars to fix aspect ratio problems on most TV like Panasonic, Samsung, Sony etc.
 CustomMencoderOptions=-vf softskip,expand=::::1:16\/9:4
 
-# You can set different quality settings for every renderer separately. It works better like bandwidth limiting because it is not so CPU aggresive
+# You can set different quality settings for every renderer separately.
+# It works better like bandwidth limiting because it is not so CPU aggresive
 CustomMencoderQualitySettings=keyint=5:vqscale=1:vqmin=3:vqmax=5
 
-ShowAudioMetadata
-ShowSubMetadata
-true when not defined
-
-ffmpeg/mediainfo support for flavors
+# Show audio and subtitle tag for every track in #TRANSCODE# folder, if defined
+# It is useful to diferentiate between documentary audio or subtitle track, full or forced subtitles etc.
+# When not defined, TRUE is used as default(Metadata/tags are detected by MediaInfo/FFmpeg)
+ShowAudioMetadata=false
+ShowSubMetadata=true
 
 AnalyzeAllBeforeFolderShown
 }}}
