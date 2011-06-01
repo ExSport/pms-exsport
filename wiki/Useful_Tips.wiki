@@ -30,9 +30,14 @@ CustomMencoderQualitySettings=keyint=5:vqscale=1:vqmin=3:vqmax=5
 
 # Show audio and subtitle tag for every track in #TRANSCODE# folder, if defined
 # It is useful to diferentiate between documentary audio or subtitle track, full or forced subtitles etc.
-# When not defined, TRUE is used as default(Metadata/tags are detected by MediaInfo/FFmpeg)
+# When not defined, TRUE is used as default (Metadata tags are detected by MediaInfo/FFmpeg engine)
 ShowAudioMetadata=false
 ShowSubMetadata=true
 
-AnalyzeAllBeforeFolderShown
+# When true, PMS pass DLNA compliancy when MediaInfo=true
+# Default behavior of PMS is not DLNA compliant so almost all rendereres doesn't work correctly without this fix
+# PMS loads all files in folder before sent to renderer so renderer know exact count of files in folder = less problematic and DLNA compliant 
+AnalyzeAllBeforeFolderShown=true
 }}}
+
+MORE TO COME.........time go to bed...
