@@ -36,7 +36,7 @@ ShowSubMetadata=true
 
 # When true, PMS pass DLNA compliancy when MediaInfo=true
 # Default behavior of PMS is not DLNA compliant so almost all rendereres doesn't work correctly without this fix
-# PMS loads all files in folder before sent to renderer so renderer know exact count of files in folder = less problematic and DLNA compliant 
+# PMS counts all files in folder before sent to renderer so total count is known to renderer = less problematic and DLNA compliant 
 AnalyzeAllBeforeFolderShown=true
 }}}
 
