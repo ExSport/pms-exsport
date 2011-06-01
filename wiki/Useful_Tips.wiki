@@ -1,14 +1,37 @@
 #summary One-sentence summary of this page.
 #labels Phase-Deploy
 
-= Introduction =
+= Some tips how to use new features =
 
-Some tips how to use new features
+=== PMS.conf file ===
+You can define `forced_subs_tags` in PMS.conf to specify tags which are used for `forced` subtitles.<br><br>
+*Example:*
+{{{
+# detect forced subtitle track (detection done by keywords in subtitle tag/description)
+# partial search works so defining "tit" will find also "titles"
+forced_subs_tags=forced,singing,titles
+}}}
+If this keyword is omitted, `forced` tag is used as default.
 
+=== Renderer.conf ===
+You can define renderer specific keywords which works on renderer level.<br><br>
+*Examples:*
+{{{
+# You can define specific filters working on renderer level
+# It means you can now easily define deinterlacer for Samsung TV and upscaler for PS3 etc.
+# Please use escaping by using "\" character
+# When this keyword is not defined, global settings in PMS has precedence
+# Example below adds black bars to fix aspect ratio problems on most TV like Panasonic, Samsung, Sony etc.
+CustomMencoderOptions=-vf softskip,expand=::::1:16\/9:4
 
-= Details =
+# You can set different quality settings for every renderer separately. It works better like bandwidth limiting because it is not so CPU aggresive
+CustomMencoderQualitySettings=keyint=5:vqscale=1:vqmin=3:vqmax=5
 
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
+ShowAudioMetadata
+ShowSubMetadata
+true when not defined
+
+ffmpeg/mediainfo support for flavors
+
+AnalyzeAllBeforeFolderShown
+}}}
