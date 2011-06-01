@@ -14,7 +14,7 @@ forced_subs_tags=forced,singing,titles
 If this keyword is omitted, `forced` tag is used as default.
 
 === Renderer.conf ===
-You can define renderer specific keywords which works on renderer level.<br><br>
+You can define renderer specific keywords which works on renderer level<br><br>
 *Examples:*
 {{{
 # You can define specific filters working on renderer level
