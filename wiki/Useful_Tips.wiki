@@ -1,5 +1,5 @@
 #summary Useful tips how to use this custom build
-#labels Phase-Deploy
+#labels Phase-Deploy,Featured
 
 = Some tips how to use new features =
 
