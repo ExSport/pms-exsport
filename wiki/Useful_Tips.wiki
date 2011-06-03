@@ -8,7 +8,7 @@ You can define *`forced_subs_tags`* in PMS.conf to specify tags which are used f
 *Example:*
 {{{
 # detect forced subtitle track (detection done by keywords in subtitle tag/description)
-# partial search works so defining "tit" will find also "titles"
+# partial search works so defining "sing" will find also "singing"
 forced_subs_tags=forced,singing,titles
 }}}
 If this keyword is omitted, *`forced`* tag is used as default.
@@ -19,7 +19,7 @@ You can define renderer specific keywords which works on renderer level<br><br>
 {{{
 # You can define specific filters working on renderer level
 # It means you can now easily define deinterlacer for Samsung TV and upscaler for PS3 etc.
-# Please use escaping by using "\" character
+# Please use escaping by using "\" character when special java char used
 # When this keyword is not defined, global settings in PMS has precedence
 # Example below adds black bars to fix aspect ratio problems on most TV like Panasonic, Samsung, Sony etc.
 CustomMencoderOptions=-vf softskip,expand=::::1:16\/9:4
