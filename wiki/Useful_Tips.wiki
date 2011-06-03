@@ -4,14 +4,14 @@
 = Some tips how to use new features =
 
 === PMS.conf file ===
-You can define {{{forced_subs_tags}}} in PMS.conf to specify tags which are used for `forced` subtitles.<br><br>
+You can define *`forced_subs_tags`* in PMS.conf to specify tags which are used for *`forced`* subtitles.<br><br>
 *Example:*
 {{{
 # detect forced subtitle track (detection done by keywords in subtitle tag/description)
 # partial search works so defining "tit" will find also "titles"
 forced_subs_tags=forced,singing,titles
 }}}
-If this keyword is omitted, `forced` tag is used as default.
+If this keyword is omitted, *`forced`* tag is used as default.
 
 === Renderer.conf ===
 You can define renderer specific keywords which works on renderer level<br><br>
