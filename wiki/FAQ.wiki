@@ -9,6 +9,7 @@ You can define *`forced_subs_tags`* in PMS.conf to specify tags which are used f
 {{{
 # detect forced subtitle track (detection done by keywords in subtitle tag/description)
 # partial search works so defining "sing" will find also "singing"
+# when external subtitle file used, use naming like this: moviename.en-forced.srt
 forced_subs_tags=forced,singing,titles
 }}}
 If this keyword is omitted, *`forced`* tag is used as default.
