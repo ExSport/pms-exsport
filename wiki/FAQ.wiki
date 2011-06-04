@@ -41,5 +41,5 @@ ShowSubMetadata=true
 AnalyzeAllBeforeFolderShown=true
 }}}
 
-===     Preview how it is shown on UPnP/DLNA Client     ===
-http://code.google.com/p/pms-exsport/source/browse/wiki/images/Sample_small.png
+=== Preview how it is shown on UPnP/DLNA Client ===
+http://code.google.com/p/pms-exsport/source/browse/wiki/images/sample_small.png
