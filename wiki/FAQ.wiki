@@ -46,8 +46,8 @@ To define tag for external subtitle file use this example:<br>
 *_moviename.cs-full.srt_* or *_moviename.cs-forced.srt_* etc. Delimiter for tag is "*-*"<br>
 For tagging subtitles in MKV container(if tag is missing), you can use e.g. *_MKVTOOLNIX_* and add this info as "*Track name*".<br><br>
 http://pms-exsport.googlecode.com/svn/wiki/images/pms_config.jpg<br><br>
-*When configured, how to load it automatically?*
-  * you need to enable "Autoload *.srt/*.sub subtitles with the same name" in PMS
+*When configured, how to load subs automatically?*
+  * you need to enable "*`Autoload *.srt/*.sub subtitles with the same name`*" in PMS
   * and choose [MENCODER] or [MENCODER]{External Subtitles} inside #--TRANSCODE--# folder
   * or choose Movie_Name.avi[MENCODER]{External Subtitles} outside #--TRANSCODE--# folder
 
