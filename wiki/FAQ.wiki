@@ -42,4 +42,4 @@ AnalyzeAllBeforeFolderShown=true
 }}}
 
 === Preview how it is shown on UPnP/DLNA Client ===
-http://code.google.com/p/pms-exsport/source/browse/wiki/images/sample_small.png
+http://pms-exsport.googlecode.com/svn/wiki/images/sample_small.png
