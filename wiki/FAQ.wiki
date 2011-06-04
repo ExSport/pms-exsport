@@ -43,9 +43,11 @@ AnalyzeAllBeforeFolderShown=true
 
 === Preview how it is shown on UPnP/DLNA Client ===
 *_Local files shared in PMS:_*
-{{{Sample.mkv
+{{{
+Sample.mkv
 Sample.de.idx
 Sample.de.sub
 Sample.es-Full.srt
-Sample.es-Headings.srt}}}
+Sample.es-Headings.srt
+}}}
 http://pms-exsport.googlecode.com/svn/wiki/images/sample_small.png
