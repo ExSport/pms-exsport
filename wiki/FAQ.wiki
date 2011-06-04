@@ -58,8 +58,8 @@ http://pms-exsport.googlecode.com/svn/wiki/images/pms_config.jpg<br><br>
 *_Local files shared in PMS:_*
 {{{
 Sample.mkv
-Sample.de.idx
-Sample.de.sub
+Sample.de.idx (VobSub)
+Sample.de.sub (VobSub)
 Sample.es-Full.srt
 Sample.es-Headings.srt
 }}}
