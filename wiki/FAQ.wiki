@@ -43,7 +43,7 @@ AnalyzeAllBeforeFolderShown=true
 
 ==== How to configure forced subtitles: ====
 To define tag for external subtitle file use this example: *_moviename.cs-full.srt_* or *_moviename.cs-forced.srt_* etc. Delimiter for tag is *`"-"`*
-For tagging subtitles in MKV container(if tag is missing), you can use e.g. *_MKVTOOLNIX_* and add this info as *`"Track name"`*.
+For tagging subtitles in MKV container(if tag is missing), you can use e.g. *_MKVTOOLNIX_* and add this info as "*Track name*".
 
 === Preview how it is shown on UPnP/DLNA Client ===
 *_Local files shared in PMS:_*
