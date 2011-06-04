@@ -9,7 +9,7 @@ You can define *`forced_subs_tags`* in PMS.conf to specify tags which are used f
 {{{
 # detect forced subtitle track (detection done by keywords in subtitle tag/description)
 # partial search works so defining "sing" will find also "singing"
-# when external subtitle file used, use *`-`* as delimiter. Example: _moviename.en-forced.srt_
+# when external subtitle file used, use "-" as delimiter. Example: moviename.en-forced.srt
 forced_subs_tags=forced,singing,titles
 }}}
 If this keyword is omitted, *`forced`* tag is used as default.
@@ -42,7 +42,7 @@ AnalyzeAllBeforeFolderShown=true
 }}}
 
 ==== How to configure forced subtitles: ====
-To define tag for external subtitle file use this example: moviename.cs-full.srt or moviename.cs-forced.srt etc. Delimiter for tag is "-"
+To define tag for external subtitle file use this example: *_moviename.cs-full.srt_* or *_moviename.cs-forced.srt_* etc. Delimiter for tag is *`-`*
 For tagging subtitles in MKV container(if tag is missing), you can use e.g. MKVTOOLNIX(mkvmerge GUI) and add this info as "Track name".
 
 === Preview how it is shown on UPnP/DLNA Client ===
