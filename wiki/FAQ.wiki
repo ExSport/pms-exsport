@@ -43,3 +43,4 @@ AnalyzeAllBeforeFolderShown=true
 
 === Preview how it is shown on UPnP/DLNA Client ===
 http://pms-exsport.googlecode.com/svn/wiki/images/sample_small.png
+http://pms-exsport.googlecode.com/svn/wiki/images/sample.png
