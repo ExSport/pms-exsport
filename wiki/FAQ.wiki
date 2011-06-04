@@ -48,8 +48,8 @@ For tagging subtitles in MKV container(if tag is missing), you can use e.g. *_MK
 http://pms-exsport.googlecode.com/svn/wiki/images/pms_config.jpg<br><br>
 *When configured, how to load subs automatically?*
   * you need to enable "*`Autoload *.srt/*.sub subtitles with the same name`*" in PMS
-  * and choose `[MENCODER]` or `[MENCODER]{External Subtitles}` inside `#--TRANSCODE--#` folder
-  * or choose `Movie_Name.avi[MENCODER]{External Subtitles}` outside `#--TRANSCODE--#` folder
+  * and choose *`[MENCODER]`* or *`[MENCODER]{External Subtitles}`* inside *`#--TRANSCODE--#`* folder
+  * or choose *`Movie_Name.avi[MENCODER]{External Subtitles}`* outside *`#--TRANSCODE--#`* folder
 
 === Preview how it is shown on UPnP/DLNA Client ===
 *_Local files shared in PMS:_*
