@@ -50,7 +50,7 @@ http://pms-exsport.googlecode.com/svn/wiki/images/pms_config.jpg<br><br>
   * you need to enable "*`Autoload *.srt/*.sub subtitles with the same name`*" in PMS
   * and choose *`[MENCODER]`* or *`[MENCODER]{External Subtitles}`* inside *`#--TRANSCODE--#`* folder
   * or choose *`Movie_Name.avi[MENCODER]{External Subtitles}`* outside *`#--TRANSCODE--#`* folder
-  * when TSmuxer engine is used, you need browse to *`#--TRANSCODE--#`* folder to fire up *`MEncoder`* engine
+  * when *`TSmuxer`* engine is used, you need browse to *`#--TRANSCODE--#`* folder to fire up *`MEncoder`* engine
 
 === Preview how it is shown on UPnP/DLNA Client ===
 *_Local files shared in PMS:_*
