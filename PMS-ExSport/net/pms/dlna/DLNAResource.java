@@ -26,6 +26,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -60,10 +62,11 @@ import org.apache.commons.lang.StringUtils;
  *
  */
 public abstract class DLNAResource extends HTTPResource implements Cloneable, Runnable {
-	
 	protected static final int MAX_ARCHIVE_ENTRY_SIZE = 10000000;
 	protected static final int MAX_ARCHIVE_SIZE_SEEK = 800000000;
 	protected static String TRANSCODE_FOLDER = "#--TRANSCODE--#";
+	private Map<String, Integer> requestIdToRefcount = new HashMap<String, Integer>();
+	private final int STOP_PLAYING_DELAY = 4000;
 	
 	/**Returns parent object, usually a folder type of resource.
 	 * @return Parent object.
@@ -644,7 +647,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 			if (noName)
 				name = "[" + player.name() + "]";
 			else {
-				// Ditlew - WDTV Live don't show durations otherwize, and this is usefull for finding the main title
+				// Ditlew - WDTV Live don't show durations otherwise, and this is useful for finding the main title
 				if (mediaRenderer != null && mediaRenderer.isShowDVDTitleDuration() && media.dvdtrack > 0)
 				{
 					name += " - " + media.duration;
@@ -1054,15 +1057,39 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		
 		return sb.toString();
 	}
+
+	private String getRequestId(String rendererId) {
+	    return String.format("%s|%x|%s", rendererId, hashCode(), getSystemName());
+	}
 	
 	/**
 	 * Plugin implementation. When this item is going to play, it will notify all the StartStopListener objects available.
 	 * @see StartStopListener
 	 */
-	public void startPlaying() {
-		for(ExternalListener listener:ExternalFactory.getExternalListeners()) {
-			if (listener instanceof StartStopListener)
-				((StartStopListener) listener).nowPlaying(media, this);
+	public void startPlaying(final String rendererId) {
+		final String requestId = getRequestId(rendererId);
+		synchronized (requestIdToRefcount) {
+			Integer temp = (Integer)requestIdToRefcount.get(requestId);
+			if (temp == null)
+				temp = 0;
+			final Integer refCount = temp;
+			requestIdToRefcount.put(requestId, refCount + 1);
+			if (refCount == 0) {
+				final DLNAResource self = this;
+				Runnable r = new Runnable() {
+					public void run() {
+						PMS.debug("StartStopListener: event:    start");
+						PMS.debug("StartStopListener: renderer: " + rendererId);
+						PMS.debug("StartStopListener: file:     " + getSystemName());
+						PMS.debug("StartStopListener:");
+						for (ExternalListener listener:ExternalFactory.getExternalListeners()) {
+							if (listener instanceof StartStopListener)
+								((StartStopListener) listener).nowPlaying(media, self);
+						}
+					}
+				};
+				new Thread(r).start();
+			}
 		}
 	}
 	
@@ -1070,11 +1097,43 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 	 * Plugin implementation. When this item is going to play, it will notify all the StartStopListener objects available.
 	 * @see StartStopListener
 	 */
-	public void stopPlaying() {
-		for(ExternalListener listener:ExternalFactory.getExternalListeners()) {
-			if (listener instanceof StartStopListener)
-				((StartStopListener) listener).donePlaying(media, this);
-		}
+	public void stopPlaying(final String rendererId) {
+		final DLNAResource self = this;
+		final String requestId = getRequestId(rendererId);
+		Runnable defer = new Runnable() {
+			public void run() {
+				try {
+					Thread.sleep(STOP_PLAYING_DELAY);
+				} catch (InterruptedException e) {
+					PMS.error("stopPlaying sleep interrupted", e);
+				}
+
+				synchronized (requestIdToRefcount) {
+					final Integer refCount = (Integer)requestIdToRefcount.get(requestId);
+					assert refCount != null;
+					assert refCount > 0;
+					requestIdToRefcount.put(requestId, refCount - 1);
+
+					Runnable r = new Runnable() {
+						public void run() {
+							if (refCount == 1) {
+								PMS.debug("StartStopListener: event:    stop");
+								PMS.debug("StartStopListener: renderer: " + rendererId);
+								PMS.debug("StartStopListener: file:     " + getSystemName());
+								PMS.debug("StartStopListener:");
+								for (ExternalListener listener:ExternalFactory.getExternalListeners()) {
+									if (listener instanceof StartStopListener)
+										((StartStopListener) listener).donePlaying(media, self);
+								}
+							}
+						}
+					};
+					new Thread(r).start();
+				}
+			}
+		};
+
+		new Thread(defer).start();
 	}
 	
 	/**Returns an InputStream of this DLNAResource that starts at a given time, if possible. Very useful if video chapters are being used.
@@ -1094,17 +1153,15 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		// Ditlew - WDTV Live
 		// Ditlew - We convert byteoffset to timeoffset here. This needs the stream to be CBR!
 		int cbr_video_bitrate = mediarenderer.getCBRVideoBitrate();
-		if (player != null && low > 0 && cbr_video_bitrate > 0)
-		{
+		if (player != null && low > 0 && cbr_video_bitrate > 0) {
 			int used_bit_rated = (int)((cbr_video_bitrate + 256) * 1024 / 8 * 1.04); // 1.04 = container overhead
-			if (low > used_bit_rated)
-			{
+			if (low > used_bit_rated) {
 				timeseek = low / (used_bit_rated);
 				low = 0;
 
-				// WDTV Live - if set to TS it ask multible times and ends by asking for a vild offset which kills mencoder
-				if (timeseek > media.getDurationInSeconds())
-				{
+				// WDTV Live - if set to TS it asks multiple times and ends by
+				// asking for an invalid offset which kills mencoder
+				if (timeseek > media.getDurationInSeconds()) {
 					return null;
 				}   
 					
@@ -1120,9 +1177,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 		}
 
 		if (player == null) {
-			
 			if (this instanceof IPushOutput) {
-				
 				PipedOutputStream out = new PipedOutputStream();
 				PipedInputStream fis = new PipedInputStream(out);
 				((IPushOutput) this).push(out);
@@ -1147,8 +1202,9 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				fis = ImagesUtil.getAutoRotateInputStreamImage(getInputStream(), media.orientation);
 				if (fis == null) // error, let's return the original one
 					fis = getInputStream();
-			} else
+			} else {
 				fis = getInputStream();
+			}
 			if (low > 0 && fis != null)
 				fis.skip(low);
 // WoH #822
@@ -1185,7 +1241,12 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				
 			if (externalProcess == null || externalProcess.isDestroyed()) {
 				PMS.minimal("Starting transcode/remux of " + getName());
-				externalProcess = player.launchTranscode(getSystemName(), this, media, params);
+				externalProcess = player.launchTranscode(
+				    getSystemName(),
+				    this,
+				    media,
+				    params
+				);
 				if (params.waitbeforestart > 0) {
 					PMS.debug("Sleeping for " + params.waitbeforestart + " milliseconds");
 					try {
@@ -1197,8 +1258,7 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 				}
 			} else if (timeseek > 0 && media != null && media.mediaparsed) {
 				if (media.getDurationInSeconds() > 0) {
-					
-					PMS.info("Requesting Time Seeking: " + timeseek + " seconds");
+					PMS.info("Requesting time seek: " + timeseek + " seconds");
 					params.timeseek = timeseek;
 					params.minBufferSize = 1;
 					Runnable r = new Runnable() {
@@ -1207,7 +1267,12 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 						}
 					};
 					new Thread(r).start();
-					ProcessWrapper newExternalProcess = player.launchTranscode(getSystemName(), this, media, params);
+					ProcessWrapper newExternalProcess = player.launchTranscode(
+					    getSystemName(),
+					    this,
+					    media,
+					    params
+					);
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -1249,8 +1314,6 @@ public abstract class DLNAResource extends HTTPResource implements Cloneable, Ru
 
 			return is;
 		}
-		
-	
 	}
 	
 	public Player getPlayer() {
