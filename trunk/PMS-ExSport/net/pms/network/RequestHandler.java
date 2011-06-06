@@ -25,55 +25,39 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.StringTokenizer;
 
-import net.pms.PMS;
 import net.pms.configuration.RendererConfiguration;
 import net.pms.dlna.DLNAMediaInfo;
+import net.pms.external.StartStopListenerDelegate;
+import net.pms.PMS;
 
 public class RequestHandler implements Runnable {
-	
 	public final static int SOCKET_BUF_SIZE = 32768;
-	
 	private Socket socket;
 	private OutputStream output;
 	private BufferedReader br;
-	
+
 	public RequestHandler(Socket socket) throws IOException {
 		this.socket = socket;
-		
 		this.output = socket.getOutputStream();
 		this.br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 	}
-	
+
 	public void run() {
-		
 		Request request = null;
+		StartStopListenerDelegate startStopListenerDelegate = new StartStopListenerDelegate(
+			socket.getInetAddress().getHostAddress()
+		);
+
 		try {
-			
 			PMS.debug("Opened handler on socket " + socket);
 			PMS.get().getRegistry().disableGoToSleep();
-			
 			int receivedContentLength = -1;
-			
 			String headerLine = br.readLine();
 			boolean useragentfound = false;
 			String userAgentString = null;
+
 			while (headerLine != null && headerLine.length() > 0) {
 				PMS.debug( "Received on socket: " + headerLine);
-				/*if (headerLine != null && headerLine.toUpperCase().startsWith("USER-AGENT:")) {
-					if (headerLine.toUpperCase().contains("PLAYSTATION")) {
-						PMS.get().setRendererfound(Request.PS3);
-						request.setMediaRenderer(Request.PS3);
-					} else if (headerLine.toUpperCase().contains("XBOX") || headerLine.toUpperCase().contains("XENON")) {
-						PMS.get().setRendererfound(Request.XBOX);
-						request.setMediaRenderer(Request.XBOX);
-					}
-				}
-				if (headerLine != null && headerLine.toUpperCase().startsWith("X-AV-CLIENT-INFO")) {
-					if (headerLine.toUpperCase().contains("PLAYSTATION")) {
-						PMS.get().setRendererfound(Request.PS3);
-						request.setMediaRenderer(Request.PS3);
-					}
-				}*/
 				if (!useragentfound && headerLine != null && headerLine.toUpperCase().startsWith("USER-AGENT") && request != null) {
 					userAgentString = headerLine.substring(headerLine.indexOf(":")+1).trim();
 					RendererConfiguration renderer = RendererConfiguration.getRendererConfigurationByUA(userAgentString);
@@ -133,10 +117,10 @@ public class RequestHandler implements Runnable {
 				} catch (Exception e) {
 					PMS.error("Error in parsing HTTP headers", e);
 				}
-				
+
 				headerLine = br.readLine();
 			}
-			
+
 			// if client not recognized, take a default renderer config
 			if (request != null && request.getMediaRenderer() == null) {
 				request.setMediaRenderer(RendererConfiguration.getDefaultConf());
@@ -146,49 +130,45 @@ public class RequestHandler implements Runnable {
 					PMS.get().setRendererfound(request.getMediaRenderer());
 				}
 			}
-			
+
 			if (receivedContentLength > 0) {
-				
 				char buf [] = new char [receivedContentLength];
 				br.read(buf);
 				if (request != null)
 					request.setTextContent(new String(buf));
 			}
-			
+
 			if (request != null)
 				PMS.info( "HTTP: " + request.getArgument() + " / " + request.getLowRange() + "-" + request.getHighRange());
-			
+
 			if (request != null)
-				request.answer(output);
-			
+				request.answer(output, startStopListenerDelegate);
+
 			if (request != null && request.getInputStream() != null)
 				request.getInputStream().close();
-			
-			PMS.get().getRegistry().reenableGoToSleep();
-			
+
 		} catch (IOException e) {
-			PMS.debug("Unexpected IO Error: " + e.getClass() + ": " +  e.getMessage());
+			PMS.debug("Unexpected IO error: " + e.getClass() + ": " +  e.getMessage());
 			if (request != null && request.getInputStream() != null) {
 				try {
-					PMS.debug( "Close InputStream" + request.getInputStream());
+					PMS.debug("Closing input stream: " + request.getInputStream());
 					request.getInputStream().close();
 				} catch (IOException e1) {
-					PMS.error("Close InputStream Error", e);
+					PMS.error("Error closing input stream", e);
 				}
 			}
 		} finally {
 			try {
+				PMS.get().getRegistry().reenableGoToSleep();
 				output.close();
 				br.close();
-				
 				socket.close();
 			} catch (IOException e) {
-				PMS.error("Close Connection Error", e);
+				PMS.error("Error closing connection: ", e);
 			}
-			PMS.debug("Close Connection");
+
+			startStopListenerDelegate.stop();
+			PMS.debug("Close connection");
 		}
 	}
-	
-	
-
 }
