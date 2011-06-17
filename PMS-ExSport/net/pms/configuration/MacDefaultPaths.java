@@ -24,7 +24,7 @@ class MacDefaultPaths implements ProgramPaths {
 
 	@Override
 	public String getMencoderMTPath() {
-		return "osx/mencoder_mt";
+		return "osx/mencoder";
 	}
 
 	@Override
@@ -34,7 +34,7 @@ class MacDefaultPaths implements ProgramPaths {
 
 	@Override
 	public String getMencoderAlternateMTPath() {
-		return "osx/mencoder_mt";
+		return "osx/mencoder";
 	}
 
 	@Override
@@ -54,7 +54,7 @@ class MacDefaultPaths implements ProgramPaths {
 
 	@Override
 	public String getDCRaw() {
-		return "osx/dcrawU";
+		return "osx/dcraw";
 	}
 
 }

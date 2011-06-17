@@ -20,7 +20,6 @@ package net.pms.network;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -446,10 +445,11 @@ public class RequestV2 extends HTTPResource {
 					if (filessize - minus <= 0) // if no more elements, send the startingIndex
 						totalCount = startingIndex;
 					response.append("<TotalMatches>" + totalCount + "</TotalMatches>");
-				} else if(browseFlag!=null && browseFlag.equals("BrowseDirectChildren"))
+				} else if(browseFlag!=null && browseFlag.equals("BrowseDirectChildren")) {
 					response.append("<TotalMatches>" + (((parentFolder!=null)?parentFolder.childrenNumber():filessize) - minus) + "</TotalMatches>");
-					else //from upnp spec: If BrowseMetadata is specified in the BrowseFlags then TotalMatches = 1
-						response.append("<TotalMatches>1</TotalMatches>");
+				} else { //from upnp spec: If BrowseMetadata is specified in the BrowseFlags then TotalMatches = 1
+					response.append("<TotalMatches>1</TotalMatches>");
+				}
 				response.append(CRLF);
 				response.append("<UpdateID>");
 				if (parentFolder != null) {

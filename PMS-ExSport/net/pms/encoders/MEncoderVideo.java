@@ -57,6 +57,7 @@ import net.pms.dlna.DLNAMediaAudio;
 import net.pms.dlna.DLNAMediaInfo;
 import net.pms.dlna.DLNAMediaSubtitle;
 import net.pms.dlna.DLNAResource;
+import net.pms.dlna.FileTranscodeVirtualFolder;
 import net.pms.dlna.InputFile;
 import net.pms.formats.Format;
 import net.pms.io.OutputParams;
@@ -87,10 +88,6 @@ import com.jgoodies.forms.layout.FormLayout;
 import com.sun.jna.Platform;
 
 public class MEncoderVideo extends Player {
-
-	public JCheckBox getCheckBox() {
-		return checkBox;
-	}
 	private JTextField mencoder_ass_scale;
 	private JTextField mencoder_ass_margin;
 	private JTextField mencoder_ass_outline;
@@ -121,17 +118,61 @@ public class MEncoderVideo extends Player {
 	private JCheckBox intelligentsync;
 	private JTextField alternateSubFolder;
 	private JButton subColor;
+	private JTextField ocw;
+	private JTextField och;
+	private JCheckBox subs;
+	private JCheckBox fribidi;
+	private final PmsConfiguration configuration;
+	public static final int MENCODER_MAX_THREADS = 8;
+	protected boolean dts;
+	public static final String ID = "mencoder"; //$NON-NLS-1$
+	protected boolean pcm;
+	protected boolean mux;
+	protected boolean ovccopy;
+	protected boolean dvd;
+	protected boolean oaccopy;
+	protected boolean mpegts;
+	protected boolean wmv;
+	protected String overridenMainArgs[];
+	//protected String defaultSubArgs [];
+
+	public static final String DEFAULT_CODEC_CONF_SCRIPT =
+		Messages.getString("MEncoderVideo.68") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.69") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.70") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.71") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.72") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.73") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.75") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.76") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.77") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.78") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.79") //$NON-NLS-1$
+		+ "#\n" //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.80") //$NON-NLS-1$
+		+ "container == iso :: -nosync\n" //$NON-NLS-1$
+		+ "(container == avi || container == matroska) && vcodec == mpeg4 && acodec == mp3 :: -mc 0.1\n" //$NON-NLS-1$
+		+ "container == flv :: -mc 0.1\n" //$NON-NLS-1$
+		+ "container == mov :: -mc 0.1 -noass\n" //$NON-NLS-1$
+		+ "container == rm  :: -mc 0.1\n" //$NON-NLS-1$
+		+ "container == matroska && framerate == 29.97  :: -nomux -mc 0\n" //$NON-NLS-1$
+		+ "\n" //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.87") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.88") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.89") //$NON-NLS-1$
+		+ Messages.getString("MEncoderVideo.91"); //$NON-NLS-1$
+
+	public JCheckBox getCheckBox() {
+		return checkBox;
+	}
 
 	public JCheckBox getNoskip() {
 		return noskip;
 	}
-	private JCheckBox subs;
 
 	public JCheckBox getSubs() {
 		return subs;
 	}
-	private JCheckBox fribidi;
-	private final PmsConfiguration configuration;
 
 	public MEncoderVideo(PmsConfiguration configuration) {
 		this.configuration = configuration;
@@ -150,13 +191,13 @@ public class MEncoderVideo extends Player {
 
 		checkBox = new JCheckBox(Messages.getString("MEncoderVideo.0")); //$NON-NLS-1$
 		checkBox.setContentAreaFilled(false);
-		if (PMS.getConfiguration().getSkipLoopFilterEnabled()) {
+		if (configuration.getSkipLoopFilterEnabled()) {
 			checkBox.setSelected(true);
 		}
 		checkBox.addItemListener(new ItemListener() {
 
 			public void itemStateChanged(ItemEvent e) {
-				PMS.getConfiguration().setSkipLoopFilterEnabled((e.getStateChange() == ItemEvent.SELECTED));
+				configuration.setSkipLoopFilterEnabled((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
 
@@ -167,14 +208,14 @@ public class MEncoderVideo extends Player {
 		mencodermt = new JCheckBox(Messages.getString("MEncoderVideo.35")); //$NON-NLS-1$
 		mencodermt.setFont(mencodermt.getFont().deriveFont(Font.BOLD));
 		mencodermt.setContentAreaFilled(false);
-		if (PMS.getConfiguration().getMencoderMT()) {
+		if (configuration.getMencoderMT()) {
 			mencodermt.setSelected(true);
 		}
 		mencodermt.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				PMS.getConfiguration().setMencoderMT(mencodermt.isSelected());
-				if (PMS.getConfiguration().getMencoderMT()) {
+				configuration.setMencoderMT(mencodermt.isSelected());
+				if (configuration.getMencoderMT()) {
 					JOptionPane.showMessageDialog(
 						(JFrame) (SwingUtilities.getWindowAncestor((Component) PMS.get().getFrame())),
 						Messages.getString("MEncoderVideo.31"), //$NON-NLS-1$
@@ -190,13 +231,13 @@ public class MEncoderVideo extends Player {
 
 		noskip = new JCheckBox(Messages.getString("MEncoderVideo.2")); //$NON-NLS-1$
 		noskip.setContentAreaFilled(false);
-		if (PMS.getConfiguration().isMencoderNoOutOfSync()) {
+		if (configuration.isMencoderNoOutOfSync()) {
 			noskip.setSelected(true);
 		}
 		noskip.addItemListener(new ItemListener() {
 
 			public void itemStateChanged(ItemEvent e) {
-				PMS.getConfiguration().setMencoderNoOutOfSync((e.getStateChange() == ItemEvent.SELECTED));
+				configuration.setMencoderNoOutOfSync((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
 
@@ -208,7 +249,7 @@ public class MEncoderVideo extends Player {
 			public void actionPerformed(ActionEvent e) {
 				JPanel codecPanel = new JPanel(new BorderLayout());
 				final JTextArea textArea = new JTextArea();
-				textArea.setText(PMS.getConfiguration().getCodecSpecificConfig());
+				textArea.setText(configuration.getCodecSpecificConfig());
 				textArea.setFont(new Font("Courier", Font.PLAIN, 12)); //$NON-NLS-1$
 				JScrollPane scrollPane = new JScrollPane(textArea);
 				scrollPane.setPreferredSize(new java.awt.Dimension(900, 100));
@@ -218,21 +259,21 @@ public class MEncoderVideo extends Player {
 				textAreaDefault.setBackground(Color.WHITE);
 				textAreaDefault.setFont(new Font("Courier", Font.PLAIN, 12)); //$NON-NLS-1$
 				textAreaDefault.setEditable(false);
-				textAreaDefault.setEnabled(PMS.getConfiguration().isMencoderIntelligentSync());
+				textAreaDefault.setEnabled(configuration.isMencoderIntelligentSync());
 				JScrollPane scrollPaneDefault = new JScrollPane(textAreaDefault);
 				scrollPaneDefault.setPreferredSize(new java.awt.Dimension(900, 450));
 
 				JPanel customPanel = new JPanel(new BorderLayout());
 				intelligentsync = new JCheckBox(Messages.getString("MEncoderVideo.3")); //$NON-NLS-1$
 				intelligentsync.setContentAreaFilled(false);
-				if (PMS.getConfiguration().isMencoderIntelligentSync()) {
+				if (configuration.isMencoderIntelligentSync()) {
 					intelligentsync.setSelected(true);
 				}
 				intelligentsync.addItemListener(new ItemListener() {
 
 					public void itemStateChanged(ItemEvent e) {
-						PMS.getConfiguration().setMencoderIntelligentSync((e.getStateChange() == ItemEvent.SELECTED));
-						textAreaDefault.setEnabled(PMS.getConfiguration().isMencoderIntelligentSync());
+						configuration.setMencoderIntelligentSync((e.getStateChange() == ItemEvent.SELECTED));
+						textAreaDefault.setEnabled(configuration.isMencoderIntelligentSync());
 
 					}
 				});
@@ -371,13 +412,13 @@ public class MEncoderVideo extends Player {
 		videoremux = new JCheckBox("<html>" + Messages.getString("MEncoderVideo.38") + "</html>"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		videoremux.setContentAreaFilled(false);
 		videoremux.setFont(videoremux.getFont().deriveFont(Font.BOLD));
-		if (PMS.getConfiguration().isMencoderMuxWhenCompatible()) {
+		if (configuration.isMencoderMuxWhenCompatible()) {
 			videoremux.setSelected(true);
 		}
 		videoremux.addItemListener(new ItemListener() {
 
 			public void itemStateChanged(ItemEvent e) {
-				PMS.getConfiguration().setMencoderMuxWhenCompatible((e.getStateChange() == ItemEvent.SELECTED));
+				configuration.setMencoderMuxWhenCompatible((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
 
@@ -813,13 +854,13 @@ public class MEncoderVideo extends Player {
 
 		subs = new JCheckBox(Messages.getString("MEncoderVideo.22")); //$NON-NLS-1$
 		subs.setContentAreaFilled(false);
-		if (PMS.getConfiguration().getUseSubtitles()) {
+		if (configuration.getUseSubtitles()) {
 			subs.setSelected(true);
 		}
 		subs.addItemListener(new ItemListener() {
 
 			public void itemStateChanged(ItemEvent e) {
-				PMS.getConfiguration().setUseSubtitles((e.getStateChange() == ItemEvent.SELECTED));
+				configuration.setUseSubtitles((e.getStateChange() == ItemEvent.SELECTED));
 			}
 		});
 		builder.add(subs, cc.xyw(1, 43, 15));
@@ -843,6 +884,46 @@ public class MEncoderVideo extends Player {
 		});
 		builder.add(subq, cc.xyw(3, 45, 1));
 
+		builder.addLabel(Messages.getString("MEncoderVideo.93"), cc.xyw(1, 47, 6)); //$NON-NLS-1$
+
+		builder.addLabel(Messages.getString("MEncoderVideo.28"), cc.xy(1, 49, CellConstraints.RIGHT, CellConstraints.CENTER)); //$NON-NLS-1$
+		ocw = new JTextField(configuration.getMencoderOverscanCompensationWidth());
+		ocw.addKeyListener(new KeyListener() {
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+			}
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				configuration.setMencoderOverscanCompensationWidth(ocw.getText());
+			}
+		});
+		builder.add(ocw, cc.xyw(3, 49, 1));
+
+		builder.addLabel(Messages.getString("MEncoderVideo.30"), cc.xy(5, 49)); //$NON-NLS-1$
+		och = new JTextField(configuration.getMencoderOverscanCompensationHeight());
+		och.addKeyListener(new KeyListener() {
+
+			@Override
+			public void keyPressed(KeyEvent e) {
+			}
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+			}
+
+			@Override
+			public void keyReleased(KeyEvent e) {
+				configuration.setMencoderOverscanCompensationHeight(och.getText());
+			}
+		});
+		builder.add(och, cc.xyw(7, 49, 1));
+
 		subColor = new JButton();
 		subColor.setText("Subs color");
 		subColor.setBackground(new Color(configuration.getSubsColor()));
@@ -861,13 +942,6 @@ public class MEncoderVideo extends Player {
 			}
 		});
 		builder.add(subColor, cc.xyw(12, 37, 4));
-
-		JTextArea decodeTips = new JTextArea(Messages.getString("MEncoderVideo.23")); //$NON-NLS-1$
-		decodeTips.setEditable(false);
-		decodeTips.setBorder(BorderFactory.createEtchedBorder());
-		decodeTips.setBackground(new Color(255, 255, 192));
-		builder.add(decodeTips, cc.xyw(1, 49, 15));
-
 
 		JCheckBox disableSubs = ((LooksFrame) PMS.get().getFrame()).getTr().getDisableSubs();
 		disableSubs.addItemListener(new ItemListener() {
@@ -908,7 +982,6 @@ public class MEncoderVideo extends Player {
 	public int purpose() {
 		return VIDEO_SIMPLEFILE_PLAYER;
 	}
-	public static final String ID = "mencoder"; //$NON-NLS-1$
 
 	@Override
 	public String id() {
@@ -924,17 +997,6 @@ public class MEncoderVideo extends Player {
 	public boolean isTimeSeekable() {
 		return true;
 	}
-	protected boolean dts;
-	protected boolean pcm;
-	protected boolean mux;
-	protected boolean ovccopy;
-	protected boolean dvd;
-	protected boolean oaccopy;
-	protected boolean mpegts;
-	protected boolean wmv;
-	protected String overridenMainArgs[];
-	//protected String defaultSubArgs [];
-
 	protected String[] getDefaultArgs() {
 		return new String[]{"-quiet", "-oac", oaccopy ? "copy" : (pcm ? "pcm" : "lavc"), "-of", (wmv || mpegts) ? "lavf" : (pcm && avisynth()) ? "avi" : (((pcm || dts || mux) ? "rawvideo" : "mpeg")), (wmv || mpegts) ? "-lavfopts" : "-quiet", wmv ? "format=asf" : (mpegts ? "format=mpegts" : "-quiet"), "-mpegopts", "format=mpeg2:muxrate=500000:vbuf_size=1194:abuf_size=64", "-ovc", (mux || ovccopy) ? "copy" : "lavc"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$ //$NON-NLS-9$ //$NON-NLS-10$ //$NON-NLS-11$ //$NON-NLS-12$ //$NON-NLS-13$ //$NON-NLS-14$ //$NON-NLS-15$ //$NON-NLS-16$ //$NON-NLS-17$ //$NON-NLS-18$
 	}
@@ -942,11 +1004,11 @@ public class MEncoderVideo extends Player {
 	@Override
 	public String[] args() {
 		String args[] = null;
-		String defaut[] = getDefaultArgs();
+		String defaultArgs[] = getDefaultArgs();
 		if (overridenMainArgs != null) {
-			args = new String[defaut.length + overridenMainArgs.length];
-			for (int i = 0; i < defaut.length; i++) {
-				args[i] = defaut[i];
+			args = new String[defaultArgs.length + overridenMainArgs.length];
+			for (int i = 0; i < defaultArgs.length; i++) {
+				args[i] = defaultArgs[i];
 			}
 			for (int i = 0; i < overridenMainArgs.length; i++) {
 				if (overridenMainArgs[i].equals("-of") || overridenMainArgs[i].equals("-oac") || overridenMainArgs[i].equals("-ovc") || overridenMainArgs[i].equals("-mpegopts")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -956,10 +1018,10 @@ public class MEncoderVideo extends Player {
 						overridenMainArgs[i + 1] = "-quiet"; //$NON-NLS-1$
 					}
 				}
-				args[i + defaut.length] = overridenMainArgs[i];
+				args[i + defaultArgs.length] = overridenMainArgs[i];
 			}
 		} else {
-			args = defaut;
+			args = defaultArgs;
 		}
 		return args;
 
@@ -987,7 +1049,7 @@ public class MEncoderVideo extends Player {
 	}
 
 	private String addMaximumBitrateConstraints(String encodeSettings, DLNAMediaInfo media, String quality, RendererConfiguration mediaRenderer) {
-		int defaultMaxBitrates[] = getVideoBitrateConfig(PMS.getConfiguration().getMaximumBitrate());
+		int defaultMaxBitrates[] = getVideoBitrateConfig(configuration.getMaximumBitrate());
 		int rendererMaxBitrates[] = new int[2];
 		if (mediaRenderer.getMaxVideoBitrate() != null) {
 			rendererMaxBitrates = getVideoBitrateConfig(mediaRenderer.getMaxVideoBitrate());
@@ -1052,9 +1114,34 @@ public class MEncoderVideo extends Player {
 			dvd = true;
 		}
 
+		// don't honour "Switch to tsMuxeR..." if the resource is being streamed via an MEncoder entry in
+		// the #--TRANSCODE--# folder
+		boolean forceMencoder = !configuration.getHideTranscodeEnabled()
+			&& dlna.noName 
+			&& (dlna.getParent() instanceof FileTranscodeVirtualFolder);
+
 		ovccopy = false;
-		if (params.sid == null && !dvd && !avisynth() && media != null && (media.isVideoPS3Compatible(newInput) || !params.mediaRenderer.isH264Level41Limited()) && media.isMuxable(params.mediaRenderer) && configuration.isMencoderMuxWhenCompatible() && params.mediaRenderer.isMuxH264MpegTS()) {
-			String sArgs[] = getSpecificCodecOptions(PMS.getConfiguration().getCodecSpecificConfig(), media, params, fileName, subString, PMS.getConfiguration().isMencoderIntelligentSync(), false);
+
+		int intOCW = Integer.parseInt(configuration.getMencoderOverscanCompensationWidth());
+		int intOCH = Integer.parseInt(configuration.getMencoderOverscanCompensationHeight());
+
+		if (
+			!forceMencoder &&
+			params.sid == null &&
+			!dvd &&
+			!avisynth() &&
+			media != null && (
+				media.isVideoPS3Compatible(newInput) ||
+				!params.mediaRenderer.isH264Level41Limited()
+			) &&
+			media.isMuxable(params.mediaRenderer) &&
+			configuration.isMencoderMuxWhenCompatible() &&
+			params.mediaRenderer.isMuxH264MpegTS() && (
+				intOCW == 0 &&
+				intOCH == 0
+			)
+		) {
+			String sArgs[] = getSpecificCodecOptions(configuration.getCodecSpecificConfig(), media, params, fileName, subString, configuration.isMencoderIntelligentSync(), false);
 			boolean nomux = false;
 			for (String s : sArgs) {
 				if (s.equals("-nomux")) {
@@ -1074,7 +1161,7 @@ public class MEncoderVideo extends Player {
 				return tv.launchTranscode(fileName, media, params);
 			}
 		} else if (params.sid == null && dvd && configuration.isMencoderRemuxMPEG2() && params.mediaRenderer.isMpeg2Supported()) {
-			String sArgs[] = getSpecificCodecOptions(PMS.getConfiguration().getCodecSpecificConfig(), media, params, fileName, subString, PMS.getConfiguration().isMencoderIntelligentSync(), false);
+			String sArgs[] = getSpecificCodecOptions(configuration.getCodecSpecificConfig(), media, params, fileName, subString, configuration.isMencoderIntelligentSync(), false);
 			boolean nomux = false;
 			for (String s : sArgs) {
 				if (s.equals("-nomux")) {
@@ -1135,7 +1222,7 @@ public class MEncoderVideo extends Player {
 		if (dvd) {
 			alternativeCodec = ""; //$NON-NLS-1$
 		}
-		int channels = wmv ? 2 : PMS.getConfiguration().getAudioChannelCount();
+		int channels = wmv ? 2 : configuration.getAudioChannelCount();
 		if (media != null && params.aid != null) {
 			channels = wmv ? 2 : CodecUtil.getRealChannelCount(configuration, params.aid);
 		}
@@ -1144,28 +1231,26 @@ public class MEncoderVideo extends Player {
 		StringTokenizer st = new StringTokenizer(alternativeCodec + "-channels " + channels + " " + ((params.mediaRenderer.getCustomMencoderOptions()!=null && !(params.mediaRenderer.getCustomMencoderOptions().indexOf("expand=") != -1 && dvd))?(params.mediaRenderer.getCustomMencoderOptions()):configuration.getMencoderDecode()) + add, " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		overridenMainArgs = new String[st.countTokens()];
 		int i = 0;
-		boolean next = false;
+		boolean processToken = false;
+		int nThreads = (dvd || fileName.toLowerCase().endsWith("dvr-ms")) ? //$NON-NLS-1$
+			1 : configuration.getMencoderMaxThreads();
+ 
 		while (st.hasMoreTokens()) {
 			String token = st.nextToken().trim();
-			if (next) {
-				int nbcores = configuration.getNumberOfCpuCores();
-				if (dvd || fileName.toLowerCase().endsWith("dvr-ms")) //$NON-NLS-1$
-				{
-					nbcores = 1;
-				}
-				token += ":threads=" + nbcores; //$NON-NLS-1$
+			if (processToken) {
+				token += ":threads=" + nThreads; //$NON-NLS-1$
 				if (configuration.getSkipLoopFilterEnabled() && !avisynth()) {
 					token += ":skiploopfilter=all"; //$NON-NLS-1$
 				}
-				next = false;
+				processToken = false;
 			}
 			if (token.toLowerCase().contains("lavdopts")) { //$NON-NLS-1$
-				next = true;
+				processToken = true;
 			}
 
 			overridenMainArgs[i++] = token;
 		}
-		//}
+
 		if (configuration.getMencoderMainSettings() != null) {
 			String mainConfig = configuration.getMencoderMainSettings();
 			if (params.mediaRenderer.getCustomMencoderQualitySettings() != null) {
@@ -1175,13 +1260,14 @@ public class MEncoderVideo extends Player {
 			{
 				mainConfig = mainConfig.substring(mainConfig.indexOf("/*")); //$NON-NLS-1$
 			}
-			// Ditlew - org
-			//String encodeSettings = "-lavcopts autoaspect=1:vcodec=" + vcodec + (wmv?":acodec=wmav2:abitrate=256":(":acodec=ac3:abitrate=" + CodecUtil.getAC3Bitrate(configuration, params.aid))) + ":threads=" + (wmv?1:configuration.getNumberOfCpuCores()) + ":" + mainConfig; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 
 			// Ditlew - WDTV Live (+ other byte asking clients), CBR. This probably ought to be placed in addMaximumBitrateConstraints(..)
 			int cbr_bitrate = params.mediaRenderer.getCBRVideoBitrate();
 			String cbr_settings = (cbr_bitrate > 0) ? ":vrc_buf_size=1835:vrc_minrate=" + cbr_bitrate + ":vrc_maxrate=" + cbr_bitrate + ":vbitrate=" + cbr_bitrate : "";
-			String encodeSettings = "-lavcopts autoaspect=1:vcodec=" + vcodec + (wmv ? ":acodec=wmav2:abitrate=256" : (cbr_settings + ":acodec=ac3:abitrate=" + CodecUtil.getAC3Bitrate(configuration, params.aid))) + ":threads=" + (wmv ? 1 : configuration.getNumberOfCpuCores()) + ":" + mainConfig; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+			String encodeSettings = "-lavcopts autoaspect=1:vcodec=" + vcodec + //$NON-NLS-1$
+				(wmv ? ":acodec=wmav2:abitrate=256" : (cbr_settings + ":acodec=" + (configuration.isMencoderAc3Fixed() ? "ac3_fixed" : "ac3") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				":abitrate=" + CodecUtil.getAC3Bitrate(configuration, params.aid))) + //$NON-NLS-1$
+				":threads=" + (wmv ? 1 : configuration.getMencoderMaxThreads()) + ":" + mainConfig; //$NON-NLS-1$ //$NON-NLS-2$
 
 			encodeSettings = addMaximumBitrateConstraints(encodeSettings, media, mainConfig, params.mediaRenderer);
 			st = new StringTokenizer(encodeSettings, " "); //$NON-NLS-1$
@@ -1195,7 +1281,7 @@ public class MEncoderVideo extends Player {
 
 		boolean needAssFixPTS = false;
 
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 
 		// Use ASS & Fontconfig flags (and therefore ASS font styles) for all subtitled files except vobsub, embedded, dvd and mp4 container with srt
 		// Note: The MP4 container with SRT rule is a workaround for MEncoder r30369. If there is ever a later version of MEncoder that supports external srt subs we should use that. As of r32848 that isn't the case
@@ -1209,7 +1295,7 @@ public class MEncoderVideo extends Player {
 			!dvd &&
 			!avisynth()
 		) {
-			sb.append("-ass -" + (configuration.isMencoderFontConfig() ? "" : "no") + "fontconfig "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			sb.append("-ass -").append(configuration.isMencoderFontConfig() ? "" : "no").append("fontconfig "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			if (mpegts || wmv) {
 				needAssFixPTS = Platform.isWindows(); // don't think the fixpts filter is in the mplayer trunk
 			}
@@ -1219,23 +1305,36 @@ public class MEncoderVideo extends Player {
 		if (params.sid != null && params.sid.type == DLNAMediaSubtitle.VOBSUB && configuration.getMencoderVobsubSubtitleQuality() != null) {
 			String subtitleQuality = configuration.getMencoderVobsubSubtitleQuality();
 
-			sb.append("-spuaa " + subtitleQuality + " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			sb.append("-spuaa ").append(subtitleQuality).append(" "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		}
+
+		// Apply overscan compensation
+		// -vf scale to original resolution seems to fix most cases of video warping
+		// TODO: Integrate with Video Scaler option
+		if (intOCW > 0 || intOCH > 0) {
+			String scaleAppend = "";
+
+			if (media != null && media.width > 0 && media.height > 0) {
+				scaleAppend = ",scale="+media.width+":"+media.height;
+			}
+
+			sb.append("-vf softskip,expand=-").append(intOCW).append(":-").append(intOCH).append(scaleAppend).append(" "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
 		if (params.sid != null && !params.sid.is_file_utf8 && !configuration.isMencoderDisableSubs() && configuration.getMencoderSubCp() != null && configuration.getMencoderSubCp().length() > 0) {
-			sb.append("-subcp " + configuration.getMencoderSubCp() + " "); //$NON-NLS-1$ //$NON-NLS-2$
+			sb.append("-subcp ").append(configuration.getMencoderSubCp()).append(" "); //$NON-NLS-1$ //$NON-NLS-2$
 			if (configuration.isMencoderSubFribidi()) {
-				sb.append("-fribidi-charset " + configuration.getMencoderSubCp() + " "); //$NON-NLS-1$ //$NON-NLS-2$
+				sb.append("-fribidi-charset ").append(configuration.getMencoderSubCp()).append(" "); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 
 		if (!configuration.isMencoderDisableSubs() && !avisynth()) {
 			if (configuration.getMencoderFont() != null && configuration.getMencoderFont().length() > 0) {
-				sb.append("-subfont " + configuration.getMencoderFont() + " "); //$NON-NLS-1$ //$NON-NLS-2$
+				sb.append("-subfont ").append(configuration.getMencoderFont()).append(" "); //$NON-NLS-1$ //$NON-NLS-2$
 			} else {
 				String font = CodecUtil.getDefaultFontPath();
 				if (StringUtils.isNotBlank(font)) {
-					sb.append("-subfont " + font + " "); //$NON-NLS-1$ //$NON-NLS-2$
+					sb.append("-subfont ").append(font).append(" "); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			}
 			if (configuration.isMencoderAss()) {
@@ -1247,19 +1346,19 @@ public class MEncoderVideo extends Player {
 							assSubColor = assSubColor.substring(2) + "00";
 						}
 					}
-					sb.append("-ass-color " + assSubColor + " -ass-border-color 00000000 -ass-font-scale " + configuration.getMencoderAssScale()); //$NON-NLS-1$
-					sb.append(" -ass-force-style FontName=Arial,Outline=" + configuration.getMencoderAssOutline() + ",Shadow=" + configuration.getMencoderAssShadow() + ",MarginV=" + configuration.getMencoderAssMargin() + " "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+					sb.append("-ass-color ").append(assSubColor).append(" -ass-border-color 00000000 -ass-font-scale ").append(configuration.getMencoderAssScale()); //$NON-NLS-1$
+					sb.append(" -ass-force-style FontName=Arial,Outline=").append(configuration.getMencoderAssOutline()).append(",Shadow=").append(configuration.getMencoderAssShadow()).append(",MarginV=").append(configuration.getMencoderAssMargin()).append(" "); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
 				}
 			} else {
-				sb.append("-subfont-text-scale " + configuration.getMencoderNoAssScale()); //$NON-NLS-1$
-				sb.append(" -subfont-outline " + configuration.getMencoderNoAssOutline()); //$NON-NLS-1$
-				sb.append(" -subfont-blur " + configuration.getMencoderNoAssBlur()); //$NON-NLS-1$
+				sb.append("-subfont-text-scale ").append(configuration.getMencoderNoAssScale()); //$NON-NLS-1$
+				sb.append(" -subfont-outline ").append(configuration.getMencoderNoAssOutline()); //$NON-NLS-1$
+				sb.append(" -subfont-blur ").append(configuration.getMencoderNoAssBlur()); //$NON-NLS-1$
 				int subpos = 1;
 				try {
 					subpos = Integer.parseInt(configuration.getMencoderNoAssSubPos());
 				} catch (NumberFormatException n) {
 				}
-				sb.append(" -subpos " + (100 - subpos)); //$NON-NLS-1$
+				sb.append(" -subpos ").append(100 - subpos); //$NON-NLS-1$
 			}
 		}
 
@@ -1267,17 +1366,16 @@ public class MEncoderVideo extends Player {
 		int oldc = overridenMainArgs.length;
 		overridenMainArgs = Arrays.copyOf(overridenMainArgs, overridenMainArgs.length + st.countTokens());
 		i = oldc;
-		next = false;
+		processToken = false;
 		while (st.hasMoreTokens()) {
 			String s = st.nextToken();
-			if (next) {
+			if (processToken) {
 				s = "-quiet"; //$NON-NLS-1$
-				next = false;
+				processToken = false;
 			}
 			if ((!configuration.isMencoderAss() || dvd) && s.contains("-ass")) { //$NON-NLS-1$
 				s = "-quiet"; //$NON-NLS-1$
-
-				next = true;
+				processToken = true;
 			}
 			overridenMainArgs[i++] = s;
 		}
@@ -1294,7 +1392,7 @@ public class MEncoderVideo extends Player {
 			(media.muxingMode != null && media.muxingMode.equals("Header stripping")) ||
 			(params.sid != null && params.sid.type == DLNAMediaSubtitle.VOBSUB)
 		) {
-		// Use the newer version of MEncoder
+			// Use the newer version of MEncoder
 			if (isMultiCore && configuration.getMencoderMT()) {
 				if (new File(configuration.getMencoderAlternateMTPath()).exists()) {
 					cmdArray[0] = configuration.getMencoderAlternateMTPath();
@@ -1305,7 +1403,7 @@ public class MEncoderVideo extends Player {
 				}
 			}
 		} else if (isMultiCore && configuration.getMencoderMT()) {
-		// Use the older MEncoder with multithreading
+			// Use the older MEncoder with multithreading
 			if (new File(configuration.getMencoderMTPath()).exists()) {
 				cmdArray[0] = configuration.getMencoderMTPath();
 			}
@@ -1361,18 +1459,8 @@ public class MEncoderVideo extends Player {
 			cmdArray[cmdArray.length - 10] = "-sid"; //$NON-NLS-1$
 			cmdArray[cmdArray.length - 9] = "100"; //$NON-NLS-1$
 		} else if (subString == null) { // Trick necessary for mencoder to not display the internal embedded track
-			cmdArray[cmdArray.length - 9] = "20000"; //$NON-NLS-1$
 			cmdArray[cmdArray.length - 10] = "-subdelay"; //$NON-NLS-1$
-		}
-
-		// disable ass if there are no subs (not safe ?)
-		if (params.sid == null) {
-			for (int c = 0; c < cmdArray.length; c++) {
-				if (cmdArray[c] != null && cmdArray[c].equals("-ass")) //$NON-NLS-1$
-				{
-					cmdArray[c] = "-quiet"; //$NON-NLS-1$
-				}
-			}
+			cmdArray[cmdArray.length - 9] = "20000"; //$NON-NLS-1$
 		}
 
 		cmdArray[cmdArray.length - 8] = "-quiet"; //$NON-NLS-1$
@@ -1421,7 +1509,7 @@ public class MEncoderVideo extends Player {
 			cmdArray[cmdArray.length - 3] = "-quiet"; //$NON-NLS-1$
 		}
 
-		if (fileName.toLowerCase().endsWith("evo")) { //$NON-NLS-1$
+		if (fileName.toLowerCase().endsWith(".evo")) { //$NON-NLS-1$
 			cmdArray = Arrays.copyOf(cmdArray, cmdArray.length + 2);
 			cmdArray[cmdArray.length - 4] = "-psprobe"; //$NON-NLS-1$
 			cmdArray[cmdArray.length - 3] = "10000"; //$NON-NLS-1$
@@ -1437,15 +1525,15 @@ public class MEncoderVideo extends Player {
 		// check if the media renderer supports this resolution
 		boolean mediaRendererScaler = params.mediaRenderer.isVideoRescale() && media != null && (media.width > params.mediaRenderer.getMaxVideoWidth() || (media.height > params.mediaRenderer.getMaxVideoHeight()));
 		// use scaler?
-		boolean scaler = mediaRendererScaler || (configuration.isMencoderScaler() && (configuration.getMencoderScaleX() != 0 || configuration.getMencoderScaleY() != 0));
-		if ((deinterlace || scaler) && !avisynth()) {
+		boolean scaleBool = mediaRendererScaler || (configuration.isMencoderScaler() && (configuration.getMencoderScaleX() != 0 || configuration.getMencoderScaleY() != 0));
+		if ((deinterlace || scaleBool) && !avisynth()) {
 			cmdArray = Arrays.copyOf(cmdArray, cmdArray.length + 2);
 			cmdArray[cmdArray.length - 4] = "-vf"; //$NON-NLS-1$
 			String scalerString = "scale=" + (params.mediaRenderer.getMaxVideoWidth() > 0 ? params.mediaRenderer.getMaxVideoWidth() : configuration.getMencoderScaleX()) + ":" + (params.mediaRenderer.getMaxVideoHeight() > 0 ? params.mediaRenderer.getMaxVideoHeight() : configuration.getMencoderScaleY()); //$NON-NLS-1$ //$NON-NLS-2$
 			if (deinterlace) {
 				scalerString = "," + scalerString; //$NON-NLS-1$
 			}
-			cmdArray[cmdArray.length - 3] = (deinterlace ? "yadif" : "") + (scaler ? scalerString : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+			cmdArray[cmdArray.length - 3] = (deinterlace ? "yadif" : "") + (scaleBool ? scalerString : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 		}
 
 		if (configuration.getMencoderMT() && !avisynth && !dvd && !(media.codecV != null && (media.codecV.equals("mpeg2video")))) {
@@ -1456,7 +1544,7 @@ public class MEncoderVideo extends Player {
 
 		boolean noMC0NoSkip = false;
 		if (media != null) {
-			String sArgs[] = getSpecificCodecOptions(PMS.getConfiguration().getCodecSpecificConfig(), media, params, fileName, subString, PMS.getConfiguration().isMencoderIntelligentSync(), false);
+			String sArgs[] = getSpecificCodecOptions(configuration.getCodecSpecificConfig(), media, params, fileName, subString, configuration.isMencoderIntelligentSync(), false);
 			if (sArgs != null && sArgs.length > 0) {
 				boolean vfConsumed = false;
 				boolean afConsumed = false;
@@ -1511,7 +1599,10 @@ public class MEncoderVideo extends Player {
 					} else if (sArgs[s].equals("-quality")) { //$NON-NLS-1$
 						for (int c = 0; c < cmdArray.length; c++) {
 							if (cmdArray[c] != null && cmdArray[c].equals("-lavcopts")) {//$NON-NLS-1$
-								cmdArray[c + 1] = "autoaspect=1:vcodec=" + vcodec + ":acodec=ac3:abitrate=" + CodecUtil.getAC3Bitrate(configuration, params.aid) + ":threads=" + configuration.getNumberOfCpuCores() + ":" + sArgs[s + 1]; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+								cmdArray[c + 1] = "autoaspect=1:vcodec=" + vcodec + //$NON-NLS-1$
+									":acodec=" + (configuration.isMencoderAc3Fixed() ? "ac3_fixed" : "ac3") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+									":abitrate=" + CodecUtil.getAC3Bitrate(configuration, params.aid) + //$NON-NLS-1$
+									":threads=" + configuration.getMencoderMaxThreads() + ":" + sArgs[s + 1]; //$NON-NLS-1$ //$NON-NLS-2$
 								addMaximumBitrateConstraints(cmdArray[c + 1], media, cmdArray[c + 1], params.mediaRenderer);
 								sArgs[s + 1] = "-quality"; //$NON-NLS-1$
 								s++;
@@ -1560,7 +1651,7 @@ public class MEncoderVideo extends Player {
 			}
 		}
 
-		if ((pcm || dts || mux) || (PMS.getConfiguration().isMencoderNoOutOfSync() && !noMC0NoSkip)) {
+		if ((pcm || dts || mux) || (configuration.isMencoderNoOutOfSync() && !noMC0NoSkip)) {
 			cmdArray = Arrays.copyOf(cmdArray, cmdArray.length + 3);
 			cmdArray[cmdArray.length - 5] = "-mc"; //$NON-NLS-1$
 			cmdArray[cmdArray.length - 4] = "0.005"; //$NON-NLS-1$
@@ -1589,6 +1680,14 @@ public class MEncoderVideo extends Player {
 			cmdArray[cmdArray.length - 5] = "lavcresample=" + rate; //$NON-NLS-1$
 			cmdArray[cmdArray.length - 4] = "-srate"; //$NON-NLS-1$
 			cmdArray[cmdArray.length - 3] = rate; //$NON-NLS-1$
+		}
+
+		// add a -cache option for piped media (e.g. rar/zip file entries):
+		// https://code.google.com/p/ps3mediaserver/issues/detail?id=911
+		if (params.stdin != null) {
+			cmdArray = Arrays.copyOf(cmdArray, cmdArray.length + 2);
+			cmdArray[cmdArray.length - 4] = "-cache"; //$NON-NLS-1$
+			cmdArray[cmdArray.length - 3] = "8192"; //$NON-NLS-1$
 		}
 
 		PipeProcess pipe = null;
@@ -1936,29 +2035,4 @@ public class MEncoderVideo extends Player {
 		args.toArray(definitiveArgs);
 		return definitiveArgs;
 	}
-	public static final String DEFAULT_CODEC_CONF_SCRIPT =
-		Messages.getString("MEncoderVideo.68") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.69") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.70") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.71") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.72") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.73") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.75") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.76") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.77") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.78") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.79") //$NON-NLS-1$
-		+ "#\n" //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.80") //$NON-NLS-1$
-		+ "container == iso :: -nosync\n" //$NON-NLS-1$
-		+ "(container == avi || container == matroska) && vcodec == mpeg4 && acodec == mp3 :: -mc 0.1\n" //$NON-NLS-1$
-		+ "container == flv :: -mc 0.1\n" //$NON-NLS-1$
-		+ "container == mov :: -mc 0.1 -noass\n" //$NON-NLS-1$
-		+ "container == rm  :: -mc 0.1\n" //$NON-NLS-1$
-		+ "container == matroska && framerate == 29.97  :: -nomux -mc 0\n" //$NON-NLS-1$
-		+ "\n" //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.87") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.88") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.89") //$NON-NLS-1$
-		+ Messages.getString("MEncoderVideo.91"); //$NON-NLS-1$
 }
