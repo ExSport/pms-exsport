@@ -712,4 +712,7 @@ public class RendererConfiguration {
 		return getBoolean(ANALYZE_ALL_FILES, false) && MediaInfoParser.isValid();
 	}
 
+	public boolean isAnalyzeFolderAllFiles() {
+		return getBoolean(ANALYZE_ALL_FILES, false) && MediaInfoParser.isValid();
+	}
 }
