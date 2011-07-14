@@ -4,13 +4,13 @@
 = Some tips how to use new features =
 
 === PMS.conf file ===
-You can define *`forced_subs_tags`* in PMS.conf to specify tags which are used for *`forced`* subtitles.<br><br>
+You can define *`forced_sub_tags`* in PMS.conf *(can be done in GUI in latest version!)* to specify tags which are used for *`forced`* subtitles.<br><br>
 *Example:*
 {{{
 # detect forced subtitle track (detection done by keywords in subtitle tag/description)
 # partial search works so defining "sing" will find also "singing"
 # when external subtitle file used, use "-" as delimiter. Example: moviename.en-forced.srt
-forced_subs_tags=forced,singing,titles
+forced_sub_tags=forced,singing,titles
 }}}
 If this keyword is omitted, *`forced`* tag is used as default.
 
