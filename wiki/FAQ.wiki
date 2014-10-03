@@ -2,6 +2,7 @@
 #labels Featured,Phase-Learn,Phase-Deploy
 
 = Some tips how to use new features =
+*(Info here is quite old but principles are still same)*
 
 === PMS.conf file ===
 You can define *`forced_sub_tags`* in PMS.conf *(can be done in GUI in latest version!)* to specify tags which are used for *`forced`* subtitles.<br><br>
