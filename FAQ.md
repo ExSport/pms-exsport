@@ -47,7 +47,7 @@ For tagging subtitles in MKV container(if tag is missing), you can use e.g. <b><
 <b><code>Subtitles language priority:</code></b> - here put required subtitle code (only one supported!)<br>
 GUI changed in official v1.50b1 to more easily configure forced subs so it is defined separately(in past "Subtitles lang priority:" was used for it)<br>
 <br><br>
-<img src='http://pms-exsport.googlecode.com/svn/wiki/images/pms_config.jpg' /><br><br>
+<img src='https://raw.githubusercontent.com/ExSport/pms-exsport/master/Wiki/Images/pms_config.jpg' /><br><br>
 <b>When correctly configured, how to load subs automatically?</b>
 <ul><li>you need to enable "<b><code>Autoload *.srt/*.sub subtitles with the same name</code></b>" in PMS<br>
 </li><li>and choose <b><code>[MENCODER]</code></b> or <b><code>[MENCODER]{External Subtitles}</code></b> inside <b><code>#--TRANSCODE--#</code></b> folder<br>
@@ -62,4 +62,4 @@ Sample.de.sub (VobSub)<br>
 Sample.es-Full.srt<br>
 Sample.es-Headings.srt<br>
 </code></pre>
-<img src='http://pms-exsport.googlecode.com/svn/wiki/images/sample_small.png' />
+<img src='https://raw.githubusercontent.com/ExSport/pms-exsport/master/Wiki/Images/sample_small.png' />
